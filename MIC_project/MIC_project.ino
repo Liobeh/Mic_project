@@ -1,17 +1,21 @@
 // Libraries
 
-#include <stdlib.h>;
+// #include<Arduino.h>
+// #include <stdlib.h>
+
 
 
 // Setup das variaveis
 
 volatile bool flag_480s = false; //flag tempo
 
+volatile bool flag_botao = false; //flag botao pressionado
 
 volatile uint16_t segundos = 0; // timer
-uint16_t tempo_limite = 10; 
+uint16_t tempo_limite = 240; 
 uint16_t tempo_restante = 0;
- 
+
+uint8_t escolhido = random(4, 8);
 uint8_t erros = 0;
 
 // Setup dos pinos
@@ -19,6 +23,15 @@ uint8_t erros = 0;
 #define chave_5 5
 #define chave_6 6
 #define chave_7 7
+
+#define botao 3 
+
+
+
+void interrupcaoBotao () {
+  flag_botao = true;
+}
+
 
 ISR(TIMER1_COMPA_vect) /* chamada a cada 1 s */ 
 {
@@ -39,6 +52,12 @@ void setup()
   pinMode(chave_5,  INPUT_PULLUP);
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
+
+  Serial.println(escolhido);
+
+
+  pinMode(botao, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(botao), interrupcaoBotao, FALLING);
 
   // Setup do timer 
   cli();
@@ -65,43 +84,49 @@ void loop(){
 
   //jogo 1
   
-  while (1){
+  while (1) {
     
-    // os switches disponiveis sao os switches 4 a 7
+    // os switches disponiveis sao os switches 1 a 4
     
-    int escolhido = (rand() % 4) + 4; // escolhe random entre 4 a 7 
-
     //Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
     //o jogador com o manual deve descobrir qual eh o switch correto para ligar
     //o jogador com a bomba liga o switch e aperta um botao de confirmacao
 
-    Serial.println(escolhido);
     
-    // Se estiver correto o jogo acaba
-    if (digitalRead(botao) == LOW and digitalRead(escolhido) == LOW){ 
-      break
-    }
+    if (flag_botao) {
+    
+      
+      Serial.println("BOTAO PRESSIONADO!");
+    
+      if (digitalRead(escolhido) == LOW) {
+        break;
+      }
+      
+      else {
+        erros++;
+        Serial.println(erros);
+      }
 
-    //se estiver errado incrementa aos erros
-    elif (digitalRead(botao) == LOW){ 
-      erros++
+      flag_botao = false;
     }
+    
 
     //precisamos manter a checagem da interrupcao e dos erros
     
     if (erros >= 3){
       gameover(); 
+      
     }
     
-    if(flag_480s) {
-      gameover();
-      flag_480s = false;
-    }
+    //if(flag_480s) {
+    //  gameover();
+    //  flag_480s = false;
+   // }
     
   }
 
   
-   
+  Serial.println("prox jogo");
   tempo_restante = tempo_limite - segundos;
   
 }
