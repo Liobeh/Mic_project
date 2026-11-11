@@ -12,7 +12,7 @@ volatile bool flag_480s = false; //flag tempo
 volatile bool flag_botao = false; //flag botao pressionado
 
 volatile uint16_t segundos = 0; // timer
-uint16_t tempo_limite = 240; 
+const uint16_t tempo_limite = 480; 
 uint16_t tempo_restante = 0;
 
 uint8_t escolhido;
@@ -28,12 +28,29 @@ uint8_t erros = 0;
 
 
 
-void interrupcaoBotao () {
+// Leitura de um canal analogico, material da prof
+uint16_t meu_analogRead(uint8_t canal) {
+
+    ADMUX = (1 << REFS0) | canal;
+
+    // Inicia a conversao
+    ADCSRA |= (1 << ADSC);
+
+    // Espera a conversao terminar
+    while (ADCSRA & (1 << ADSC));
+
+    // Retorna o resultado
+    return ADC;
+}
+
+
+//rotina de interrupcao do botao 
+ISR(INT1_vect) {
   flag_botao = true;
 }
 
 
-ISR(TIMER1_COMPA_vect) /* chamada a cada 1 s */ 
+ISR(TIMER1_COMPA_vect) //chamada a cada 1s, material da prof
 {
   segundos++; 
   
@@ -47,41 +64,54 @@ void setup()
 {
   
   Serial.begin(9600);
-  
-  pinMode(chave_4,  INPUT_PULLUP); // config dos switches 
-  pinMode(chave_5,  INPUT_PULLUP);
-  pinMode(chave_6,  INPUT_PULLUP);
-  pinMode(chave_7,  INPUT_PULLUP);
 
-  randomSeed(analogRead(0));
+  // Habilita o ADC e configura prescaler 128, material da prof
+  ADCSRA = (1 << ADEN) |
+          (1 << ADPS2) |
+          (1 << ADPS1) |
+          (1 << ADPS0);
+
+  // Usa ADC0 como semente para o sorteio
+  randomSeed(meu_analogRead(0));
+
   escolhido = random(4, 8);
-  
+
+
+  //config pinos para o game1
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
 
   Serial.println(escolhido);
 
+  //setup registradores principais
+  cli();
 
-  pinMode(botao, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(botao), interrupcaoBotao, FALLING);
+  //setup interrupcao
+  EICRA = 0b1000;
+  EIFR = 0b10;
+  EIMSK = 0b10;
+
 
   // Setup do timer 
-  cli();
   TCCR1A = 0; /* nenhum pino ligado ao timer */
   TCCR1B = 0; /* timer parado durante a configuração */
   OCR1A = 62499; /* 62 500 passos de 16 us = 1 s */
   TIMSK1 = (1 << OCIE1A); /* interrupção de comparação A */
   TCCR1B = (1 << WGM12) | (1 << CS12); /* modo CTC + prescaler 256 */
+
   sei();
   
 }
 
 // funcao auto-explicativa
 void gameover(){
+  flag_480s = false;
   TCCR1B = 0; /* timer parado */
   Serial.println("Game Over");
   Serial.println("Faça tal para reiniciar o jogo");
-  delay(5000);
+  while(1){
+
+  }
   
 }
 
@@ -99,13 +129,19 @@ void loop(){
     //o jogador com o manual deve descobrir qual eh o switch correto para ligar
     //o jogador com a bomba liga o switch e aperta um botao de confirmacao
 
+     if (erros >= 3 || flag_480s){
+      gameover(); 
+      
+    }
     
     if (flag_botao) {
     
       
       Serial.println("BOTAO PRESSIONADO!");
 
-        //IA
+      flag_botao = false;
+
+        //IA:
     
         // Identifica o bit correspondente ao switch sorteado
       uint8_t mascara = (1 << escolhido);
@@ -124,21 +160,9 @@ void loop(){
         Serial.println(erros);
       }
 
-      flag_botao = false;
-    }
-    
-
-    //precisamos manter a checagem da interrupcao e dos erros
-    
-    if (erros >= 3){
-      gameover(); 
       
     }
     
-    if(flag_480s) {
-     gameover();
-     flag_480s = false;
-    }
     
   }
 
