@@ -2,7 +2,19 @@
 
 #include <Arduino.h>
 #include <stdlib.h>
+// Bibliotecas p/ tela
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
+// Dimensões da tela
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+// The pins for I2C are defined by the Wire-library. 
+// On an arduino UNO:       A4(SDA), A5(SCL)
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
 // Setup das variaveis
@@ -47,6 +59,29 @@ void setup()
 {
   
   Serial.begin(9600);
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  // Address 0x3C is common for 128x64 I2C displays. Some may use 0x3D.
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+  // Clear the buffer
+  display.clearDisplay();
+
+  // Set text size and color
+  display.setTextSize(1);      // Normal 1:1 pixel scale
+  display.setTextColor(SSD1306_WHITE); // Draw white text
+  
+  // Set cursor to top-left corner
+  display.setCursor(0, 0);     
+  
+  // Print text to the display buffer
+  display.println(F("Hello, World!"));
+  
+  // Push the buffer to the screen to actually display it
+  display.display();
   
   pinMode(chave_4,  INPUT_PULLUP); // config dos switches 
   pinMode(chave_5,  INPUT_PULLUP);
