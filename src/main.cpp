@@ -15,7 +15,7 @@ volatile uint16_t segundos = 0; // timer
 uint16_t tempo_limite = 240; 
 uint16_t tempo_restante = 0;
 
-uint8_t escolhido = random(4, 8);
+uint8_t escolhido;
 uint8_t erros = 0;
 
 // Setup dos pinos
@@ -53,6 +53,12 @@ void setup()
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
 
+  randomSeed(analogRead(0));
+  escolhido = random(4, 8);
+  
+  DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
+  PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
+
   Serial.println(escolhido);
 
 
@@ -75,6 +81,7 @@ void gameover(){
   TCCR1B = 0; /* timer parado */
   Serial.println("Game Over");
   Serial.println("Faça tal para reiniciar o jogo");
+  delay(5000);
   
 }
 
@@ -97,9 +104,19 @@ void loop(){
     
       
       Serial.println("BOTAO PRESSIONADO!");
+
+        //IA
     
-      if (digitalRead(escolhido) == LOW) {
-        break;
+        // Identifica o bit correspondente ao switch sorteado
+      uint8_t mascara = (1 << escolhido);
+
+      // Define a combinação correta dos quatro switches
+      uint8_t esperado = 0b11110000 & ~mascara;
+
+      // Verifica se somente o switch sorteado está ligado
+      if ((PIND & 0b11110000) == esperado) {
+          Serial.println("SWITCH CORRETO!");
+          break;
       }
       
       else {
@@ -118,15 +135,15 @@ void loop(){
       
     }
     
-    //if(flag_480s) {
-    //  gameover();
-    //  flag_480s = false;
-   // }
+    if(flag_480s) {
+     gameover();
+     flag_480s = false;
+    }
     
   }
 
   
   Serial.println("prox jogo");
   tempo_restante = tempo_limite - segundos;
-  
+  delay(5000);
 }
