@@ -10,10 +10,8 @@
 // Dimensões da tela
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
-// The pins for I2C are defined by the Wire-library. 
-// On an arduino UNO:       A4(SDA), A5(SCL)
-#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+//setup da tela
+#define OLED_RESET     -1 // -1 porque não tem pino reset, logo depende do reset do arduino.
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 
@@ -60,36 +58,34 @@ void setup()
   
   Serial.begin(9600);
 
-  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
-  // Address 0x3C is common for 128x64 I2C displays. Some may use 0x3D.
+// ---------- inicialização da tela ------------
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // Don't proceed, loop forever
+    for(;;);
   }
 
-  // Clear the buffer
   display.clearDisplay();
 
-  // Set text size and color
-  display.setTextSize(1);      // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
+  display.setTextSize(1);      // Escala 1:1
+  display.setTextColor(SSD1306_WHITE);
   
-  // Set cursor to top-left corner
-  display.setCursor(0, 0);     
+  display.setCursor(0, 25); // posição do texto
   
-  // Print text to the display buffer
-  display.println(F("Hello, World!"));
+  display.print(F("Iniciando...")); //envia mensagem p/ display
+  display.println((char)7); // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
   
-  // Push the buffer to the screen to actually display it
-  display.display();
-  
+  display.display(); // faz display mostrar mensagem
+
+// ------- fim da inicialização da tela ---------
+
   pinMode(chave_4,  INPUT_PULLUP); // config dos switches 
   pinMode(chave_5,  INPUT_PULLUP);
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
 
+  // escolha dos elementos aleatórios
   randomSeed(analogRead(0));
-  escolhido = random(4, 8);
+  escolhido = random(4, 8); // switches do jogo 1
   
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
@@ -133,6 +129,34 @@ void loop(){
     //Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
     //o jogador com o manual deve descobrir qual eh o switch correto para ligar
     //o jogador com a bomba liga o switch e aperta um botao de confirmacao
+
+    //display
+
+    display.clearDisplay();
+    
+    display.setTextSize(2); 
+    display.setTextColor(SSD1306_WHITE);
+  
+    display.setCursor(0, 20);
+  
+    // escolhe um códgio diferente p/ cada switch
+    switch (escolhido) {
+    case 4:
+      display.println(F("Código  4"));
+      break;
+    case 5:
+      display.println(F("Código 5"));
+      break;
+    case 6:
+      display.println(F("Código 6"));
+      break;
+    case 7:
+      display.println(F("Código 7"));
+      break;
+  }
+
+    display.display();
+
 
     
     if (flag_botao) {
