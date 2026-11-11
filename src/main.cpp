@@ -69,9 +69,10 @@ void setup()
   display.setTextSize(1);      // Escala 1:1
   display.setTextColor(SSD1306_WHITE);
   
-  display.setCursor(0, 0);
+  display.setCursor(0, 25); // posição do texto
   
-  display.println(F("Hello, World!")); //envia mensagem p/ display
+  display.print(F("Iniciando...")); //envia mensagem p/ display
+  display.println((char)7); // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
   
   display.display(); // faz display mostrar mensagem
 
@@ -82,8 +83,9 @@ void setup()
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
 
+  // escolha dos elementos aleatórios
   randomSeed(analogRead(0));
-  escolhido = random(4, 8);
+  escolhido = random(4, 8); // switches do jogo 1
   
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
@@ -127,6 +129,34 @@ void loop(){
     //Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
     //o jogador com o manual deve descobrir qual eh o switch correto para ligar
     //o jogador com a bomba liga o switch e aperta um botao de confirmacao
+
+    //display
+
+    display.clearDisplay();
+    
+    display.setTextSize(2); 
+    display.setTextColor(SSD1306_WHITE);
+  
+    display.setCursor(0, 20);
+  
+    // escolhe um códgio diferente p/ cada switch
+    switch (escolhido) {
+    case 4:
+      display.println(F("Código  4"));
+      break;
+    case 5:
+      display.println(F("Código 5"));
+      break;
+    case 6:
+      display.println(F("Código 6"));
+      break;
+    case 7:
+      display.println(F("Código 7"));
+      break;
+  }
+
+    display.display();
+
 
     
     if (flag_botao) {
