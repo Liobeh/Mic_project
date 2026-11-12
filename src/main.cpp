@@ -134,7 +134,7 @@ void loop(){
 
     display.clearDisplay();
     
-    display.setTextSize(2); 
+    display.setTextSize(1); 
     display.setTextColor(SSD1306_WHITE);
   
     display.setCursor(0, 20);
@@ -142,16 +142,16 @@ void loop(){
     // escolhe um códgio diferente p/ cada switch
     switch (escolhido) {
     case 4:
-      display.println(F("Código  4"));
+      display.println(F("KEY-8B52-O1"));
       break;
     case 5:
-      display.println(F("Código 5"));
+      display.println(F("KEY-BB52-01"));
       break;
     case 6:
-      display.println(F("Código 6"));
+      display.println(F("KEY-8B5Z-0l"));
       break;
     case 7:
-      display.println(F("Código 7"));
+      display.println(F("KEY-B8SZ-Ol"));
       break;
   }
 
