@@ -26,7 +26,16 @@ uint8_t erros = 0;
 
 #define botao 3 
 
-
+// Definição de pinos jogo ADC 
+//================================
+  int LeD_amarelo     = 11;
+  int LeD_azul        = 10;
+  int LeD_verde       = 12;
+  int Potenciometro_1 = A0;
+  int Potenciometro_2 = A1;
+  int buzzer          =  9;
+  int configuracao_led_anterior = -1;
+//=================================
 
 void interrupcaoBotao () {
   flag_botao = true;
