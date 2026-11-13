@@ -26,7 +26,7 @@ uint8_t erros = 0;
 
 #define botao 3 
 
-// Definição de pinos jogo ADC 
+// Definição de pinos fase2 ADC 
 //================================
   int LeD_amarelo     = 11;
   int LeD_azul        = 10;
@@ -36,6 +36,52 @@ uint8_t erros = 0;
   int buzzer          =  9;
   int configuracao_led_anterior = -1;
 //=================================
+
+// Funções da fase2 ADC
+//===================================================================================
+void acender_leds() //void acender_leds(): 
+  {
+  int conf_amarelo; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
+  int conf_azul;
+  int conf_verde; 
+  const int piscando = 2; // condição de quando o led pisca
+  const int aceso = HIGH;
+  const int apagado = LOW;
+  const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferentes configurações de leds acesos
+  // amarelo, azul, verde
+  {aceso, aceso, apagado},
+  {apagado, apagado, piscando},
+  {piscando, piscando, piscando},
+  {apagado, piscando, aceso},
+  };
+  int configuracao_led_escolhida = random(0,4);   // um gerador pseudoaletório o qual indica uma das configurações para acender
+  while (configuracao_led_escolhida == configuracao_led_anterior)
+  {
+    configuracao_led_escolhida = random(0,4);
+  }
+  configuracao_led_anterior = configuracao_led_escolhida;  
+// a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
+  conf_amarelo = condicao_leds[configuracao_led_escolhida][0]; 
+  conf_azul    = condicao_leds[configuracao_led_escolhida][1];
+  conf_verde   = condicao_leds[configuracao_led_escolhida][2];
+
+  digitalWrite(LeD_amarelo,conf_amarelo);  // configuração do led amarelo:
+  digitalWrite(LeD_azul,conf_azul);  // e configuração do led azul:
+  digitalWrite(LeD_verde,conf_verde);  // configuração do led verde: 
+
+  }
+
+
+  void resposta_potenciometros()  //void resposta_potenciometros()
+{
+  // tabela de respostas com potenciometros para cada configuração de leds 
+  // condicional de leitura de cada potenciometro, 
+  // enquanto potenciometro_1 == valor da tabela e potenciometro_2 == valor da tabela
+     // se já se passaram tantos segundos da ativação da função led 
+     // retorna falso
+  // retorna verdadeiro
+}
+//==========================================================================================
 
 void interrupcaoBotao () {
   flag_botao = true;
@@ -62,6 +108,18 @@ void setup()
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
 
+  
+  // configuração de pinos da Fase 2 
+  //====================================================
+  randomSeed(analogRead(A5)); // analogRead(A5) é a semente de aleatoriedade 
+  pinMode(LeD_azul, OUTPUT);
+  pinMode(LeD_amarelo, OUTPUT);
+  pinMode(LeD_verde, OUTPUT);
+  pinMode(Potenciometro_1, INPUT);
+  pinMode(Potenciometro_2 , INPUT);// Declarar os três leds como saída e o botão como entrada
+  pinMode(buzzer, OUTPUT);
+
+  //====================================================
   randomSeed(analogRead(0));
   escolhido = random(4, 8);
   
@@ -85,7 +143,7 @@ void setup()
   
 }
 
-// funcao auto-explicativa
+// funcao auto-explicativa, fim de jogo
 void gameover(){
   TCCR1B = 0; /* timer parado */
   Serial.println("Game Over");
