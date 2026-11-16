@@ -26,34 +26,56 @@ uint8_t erros = 0;
 
 #define botao 3 
 
-// Definição de pinos fase2 ADC 
+// Definição de variaveis globais fase2 ADC 
 //================================
-  int LeD_amarelo     = 11;
-  int LeD_azul        = 10;
-  int LeD_verde       = 12;
-  int Potenciometro_1 = A0;
-  int Potenciometro_2 = A1;
-  int buzzer          =  9;
-  int configuracao_led_anterior = -1;
-//=================================
-
-// Funções da fase2 ADC
-//===================================================================================
-void acender_leds() //void acender_leds(): 
-  {
-  int conf_amarelo; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
-  int conf_azul;
-  int conf_verde; 
-  const int piscando = 2; // condição de quando o led pisca
-  const int aceso = HIGH;
-  const int apagado = LOW;
-  const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferentes configurações de leds acesos
+int LeD_amarelo     = 11;
+int LeD_azul        = 10;
+int LeD_verde       = 12;
+int Potenciometro_1 = A0;
+int Potenciometro_2 = A1;
+int buzzer          =  9;
+int configuracao_led_anterior = -1;
+int conf_amarelo = -2; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
+int conf_azul = -4;
+int conf_verde = -3;
+const int piscando = 2; // condição de quando o led pisca
+int pisca = HIGH;
+const int aceso = HIGH;
+const int apagado = LOW;
+int vetor_Leds[3] = {LeD_amarelo , LeD_azul, LeD_verde};
+unsigned long tempo_pisca = 300;
+unsigned long ultima_troca = 0;
+const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferentes configurações de leds acesos
   // amarelo, azul, verde
   {aceso, aceso, apagado},
   {apagado, apagado, piscando},
   {piscando, piscando, piscando},
   {apagado, piscando, aceso},
   };
+bool fase2_concluida = false;
+  //const int pot_maximo=;// 682<= maximo <=1023
+  //const int pot_meio = ;// 341<= meio <=682
+  //const int pot_minimo= ;// 0<= minimo <=341
+  const int min_max_3x= -15;
+  const int nada = -20;
+  const int meio = -11;
+  const int minimo = -9;
+  const int maximo = -16;
+  const int tabela_resposta_pot[4][2]={ // tabela de respostas com potenciometros para cada configuração de leds 
+    // pot1      pot2
+    {min_max_3x,   nada},
+    {nada,         meio},
+    {minimo,     minimo},
+    {maximo, min_max_3x},
+  };
+  int contador_de_giros = 0;
+  bool passou_pelo_minimo = 0;
+//=================================
+
+// Funções da fase2 ADC
+//===================================================================================
+void acender_leds() //void acender_leds(): 
+  {
   int configuracao_led_escolhida = random(0,4);   // um gerador pseudoaletório o qual indica uma das configurações para acender
   while (configuracao_led_escolhida == configuracao_led_anterior)
   {
@@ -71,11 +93,63 @@ void acender_leds() //void acender_leds():
 
   }
 
+  void pisca_led()
+  {
+  if ((millis() - ultima_troca) >= tempo_pisca)
+    {
+    pisca = !pisca;// inverte o sentido de pisca
+    ultima_troca = millis();
+    }
+      
+  for (int i = 0; i < 3; i++) 
+    {
+    if (condicao_leds[configuracao_led_anterior][i] == piscando) 
+      {
+        digitalWrite(vetor_Leds[i], pisca);
 
+    }
+  }
+  } 
   void resposta_potenciometros()  //void resposta_potenciometros()
 {
-  // tabela de respostas com potenciometros para cada configuração de leds 
-  // condicional de leitura de cada potenciometro, 
+ int pot_valor_lido = 0;
+ int posicao_pot_lida = 0;
+
+  pot_valor_lido = analogRead(Potenciometro_1);
+  if (pot_valor_lido <= 341)// condiconal de leitura de cada potenciometro,
+  {
+      posicao_pot_lida= minimo;
+  } 
+  else if (pot_valor_lido <= 682)// condicional de leitura de cada potenciometro,
+  {
+      posicao_pot_lida = meio;
+  } 
+  else// condicional de leitura de cada potenciometro,
+  {
+      posicao_pot_lida = maximo;
+  }
+  if (posicao_pot_lida == tabela_resposta_pot[configuracao_led_anterior][0])
+  {
+    fase2_concluida = true;
+  }
+  if(tabela_resposta_pot[configuracao_led_anterior][0] == nada)
+  {
+    fase2_concluida = true;
+  }
+  if (posicao_pot_lida == minimo)
+  {
+    passou_pelo_minimo = true;
+  }
+    if (contador_de_giros == 3 )
+  {
+      posicao_pot_lida = min_max_3x
+  }
+  if (posicao_pot_lida == maximo && passou_pelo_minimo)
+  {
+    contador_de_giros ++;
+    passou_pelo_minimo = false;
+  }
+
   // enquanto potenciometro_1 == valor da tabela e potenciometro_2 == valor da tabela
      // se já se passaram tantos segundos da ativação da função led 
      // retorna falso
@@ -108,7 +182,7 @@ void setup()
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
 
-  
+
   // configuração de pinos da Fase 2 
   //====================================================
   randomSeed(analogRead(A5)); // analogRead(A5) é a semente de aleatoriedade 
