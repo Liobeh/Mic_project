@@ -22,34 +22,16 @@ bool jogo3_iniciado = false;
 bool claro_antes;
 uint16_t limite_luz = 300;
 unsigned long inicio_estado = 0;
-
-volatile bool flag_480s = false; // flag tempo
-
-volatile bool flag_botao = false; // flag botao pressionado
-
-volatile uint16_t segundos = 0; // timer
-const uint16_t tempo_limite = 480;
-uint16_t tempo_restante = 0;
-
+unsigned long acao1;
+unsigned long acao3;
+bool estadoAcao1; 
+bool estadoAcao3;
 uint8_t escolhido;
 uint8_t protocolo;
 uint8_t codigo;
 uint8_t condicao_inicial;
-uint8_t erros = 0;
-
-// Setup dos pinos
 #define ldr 1 // A1
-
-#define chave_4 4
-#define chave_5 5
-#define chave_6 6
-#define chave_7 7
-
-#define botao 3
-
-// config do teclado
 // Configuracao do teclado 4x4
-
 const byte linhas = 4;
 const byte colunas = 4;
 
@@ -70,6 +52,28 @@ Keypad teclado = Keypad(
     pinosColunas,
     linhas,
     colunas);
+
+//interrupcoes
+volatile bool flag_480s = false; // flag tempo
+
+volatile bool flag_botao = false; // flag botao pressionado
+
+//timers
+volatile uint16_t segundos = 0; // timer
+const uint16_t tempo_limite = 480;
+uint16_t tempo_restante = 0;
+
+//erros
+uint8_t erros = 0;
+
+//fase1
+// Setup dos pinos
+#define chave_4 4
+#define chave_5 5
+#define chave_6 6
+#define chave_7 7
+#define botao 3
+
 
 // Leitura de um canal analogico, material da prof
 uint16_t meu_analogRead(uint8_t canal)
@@ -131,10 +135,10 @@ void setup()
 
   // ------- fim da inicialização da tela ---------
   // Habilita o ADC e configura prescaler 128, material da prof
-    ADCSRA = (1 << ADEN) |
-            (1 << ADPS2) |
-            (1 << ADPS1) |
-            (1 << ADPS0);
+  ADCSRA = (1 << ADEN) |
+           (1 << ADPS2) |
+           (1 << ADPS1) |
+           (1 << ADPS0);
 
   // Usa ADC0 como semente para o sorteio
   randomSeed(meu_analogRead(0));
@@ -154,7 +158,7 @@ void setup()
   Serial.print("Condicao inicial sorteada: ");
   Serial.println(condicao_inicial);
 
-  // config pinos para o game1
+  // config pinos para a fase1
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
 
@@ -193,86 +197,85 @@ void loop()
 
   // jogo 1
 
-  while (1)
-  {
+  // while (1)
+  // {
 
-    // os switches disponiveis sao os switches 1 a 4
+  //   // os switches disponiveis sao os switches 1 a 4
 
-    // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
-    // o jogador com o manual deve descobrir qual eh o switch correto para ligar
-    // o jogador com a bomba liga o switch e aperta um botao de confirmacao
+  //   // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
+  //   // o jogador com o manual deve descobrir qual eh o switch correto para ligar
+  //   // o jogador com a bomba liga o switch e aperta um botao de confirmacao
 
-    // display
+  //   // display
 
-    display.clearDisplay();
+  //   display.clearDisplay();
 
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
+  //   display.setTextSize(1);
+  //   display.setTextColor(SSD1306_WHITE);
 
-    display.setCursor(0, 20);
+  //   display.setCursor(0, 20);
 
-    // escolhe um códgio diferente p/ cada switch
-    switch (escolhido)
-    {
-    case 4:
-      display.println(F("KEY-8B52-O1"));
-      break;
-    case 5:
-      display.println(F("KEY-BB52-01"));
-      break;
-    case 6:
-      display.println(F("KEY-8B5Z-0l"));
-      break;
-    case 7:
-      display.println(F("KEY-B8SZ-Ol"));
-      break;
-    }
+  //   // escolhe um códgio diferente p/ cada switch
+  //   switch (escolhido)
+  //   {
+  //   case 4:
+  //     display.println(F("KEY-8B52-O1"));
+  //     break;
+  //   case 5:
+  //     display.println(F("KEY-BB52-01"));
+  //     break;
+  //   case 6:
+  //     display.println(F("KEY-8B5Z-0l"));
+  //     break;
+  //   case 7:
+  //     display.println(F("KEY-B8SZ-Ol"));
+  //     break;
+  //   }
 
-    display.display();
+  //   display.display();
 
-    if (flag_botao)
-    {
-      flag_botao = false;
+  //   if (flag_botao)
+  //   {
+  //     flag_botao = false;
 
-      Serial.println("BOTAO PRESSIONADO!");
+  //     Serial.println("BOTAO PRESSIONADO!");
 
-      // IA
+  //     // IA
 
-      // Identifica o bit correspondente ao switch sorteado
-      uint8_t mascara = (1 << escolhido);
+  //     // Identifica o bit correspondente ao switch sorteado
+  //     uint8_t mascara = (1 << escolhido);
 
-      // Define a combinação correta dos quatro switches
-      uint8_t esperado = 0b11110000 & ~mascara;
+  //     // Define a combinação correta dos quatro switches
+  //     uint8_t esperado = 0b11110000 & ~mascara;
 
-      // Verifica se somente o switch sorteado está ligado
-      if ((PIND & 0b11110000) == esperado)
-      {
-        Serial.println("SWITCH CORRETO!");
-        break;
-      }
+  //     // Verifica se somente o switch sorteado está ligado
+  //     if ((PIND & 0b11110000) == esperado)
+  //     {
+  //       Serial.println("SWITCH CORRETO!");
+  //       break;
+  //     }
 
-      else
-      {
-        erros++;
-        Serial.println(erros);
-      }
+  //     else
+  //     {
+  //       erros++;
+  //       Serial.println(erros);
+  //     }
 
-      
-    }
+  //   }
 
-    // precisamos manter a checagem da interrupcao e dos erros
+  //   // precisamos manter a checagem da interrupcao e dos erros
 
-    if (erros >= 3)
-    {
-      gameover();
-    }
+  //   if (erros >= 3)
+  //   {
+  //     gameover();
+  //   }
 
-    if (flag_480s)
-    {
-      gameover();
-      flag_480s = false;
-    }
-  }
+  //   if (flag_480s)
+  //   {
+  //     gameover();
+  //     flag_480s = false;
+  //   }
+  // }
 
   // Fase 3 - Protocolo de Emergencia
 
@@ -284,7 +287,6 @@ void loop()
     // Preparacao da fase
     if (!jogo3_iniciado)
     {
-
       // OLED mostra protocolo, codigo e condicao inicial
       // Jogador consulta o manual e pressiona # para iniciar
 
@@ -304,33 +306,167 @@ void loop()
     // Execucao da fase
     else
     {
+      uint8_t numero;
 
-      // Leitura do LDR
-      uint16_t luminosidade = meu_analogRead(ldr);
-      bool claro = true;
-
-      // Identifica se o LDR esta claro ou escuro
-      if (luminosidade >= limite_luz)
-      {
-        claro = false;
-      }
-      else
-      {
-        claro = true;
-      }
-
-      // Detecta mudanca de estado
-      if (claro != claro_antes)
+      switch (protocolo)
       {
 
-        inicio_estado = millis();
-        claro_antes = claro;
+      case 1: // ALFA
+        estadoAcao1 = condicao_inicial;
+        estadoAcao3 = !estadoAcao1;
+        numero = codigo + 2;
+        acao3 = 3000;
+
+        if (codigo % 2 == 0)
+          acao1 = 2000;
+        else
+          acao1 = 4000;
+
+        break;
+
+      case 2: // BETA
+        estadoAcao1 = !condicao_inicial;
+        estadoAcao3 = estadoAcao1;
+        numero = codigo + 1;
+        acao3 = 2000;
+
+        if (codigo % 2 == 0)
+          acao1 = 5000;
+        else
+          acao1 = 3000;
+
+        break;
+
+      case 3: // GAMA
+        estadoAcao1 = condicao_inicial;
+        estadoAcao3 = !estadoAcao1; 
+        numero = codigo + 3;
+        acao3 = 4000;
+
+        if (codigo % 2 == 0)
+          acao1 = 3000;
+        else
+          acao1 = 5000;
+
+        break;
+      
+        case 4: // DELTA
+        estadoAcao1 = !condicao_inicial;
+        estadoAcao3 = estadoAcao1;
+        numero = codigo + 4;
+        acao3 = 3000;
+
+        if (codigo % 2 == 0)
+          acao1 = 4000;
+        else
+          acao1 = 2000;
+
+        break;
       }
 
-      // Calcula a duracao do estado atual
-      unsigned long duracao_estado = millis() - inicio_estado;
+      
+      while (1)
+      {
+        uint16_t luminosidade = meu_analogRead(ldr);
+        bool claro = (luminosidade < limite_luz);
 
-      delay(20);
+        if (claro != claro_antes)
+        {
+          inicio_estado = millis();
+          claro_antes = claro;
+        }
+
+        unsigned long duracao_estado = millis() - inicio_estado;
+
+        if (duracao_estado >= acao1 && claro == estadoAcao1)
+        {
+          Serial.println("Acao 1 concluida");
+          break;
+        }
+
+        if (duracao_estado >= acao1 && claro != estadoAcao1)
+        {
+          erros++;
+          inicio_estado = millis();
+        }
+
+        if (erros >= 3)
+        {
+          gameover();
+        }
+
+        if (flag_480s)
+        {
+          gameover();
+        }
+
+        delay(20);
+      }
+      while (1)
+      {
+        tecla = teclado.getKey();
+        if (tecla == numero + '0')
+        {
+          Serial.println("Acao 2 completa");
+
+          inicio_estado = millis();
+          claro_antes = (meu_analogRead(ldr) < limite_luz);
+          break;
+        }
+
+        if (tecla != NO_KEY && tecla != numero + '0')
+        {
+          erros++;
+        }
+
+        if (erros >= 3)
+        {
+          gameover();
+        }
+
+        if (flag_480s)
+        {
+          gameover();
+        }
+      }
+      while (1)
+      {
+        uint16_t luminosidade = meu_analogRead(ldr);
+        bool claro = (luminosidade < limite_luz);
+
+        if (claro != claro_antes)
+        {
+          inicio_estado = millis();
+          claro_antes = claro;
+        }
+
+        unsigned long duracao_estado = millis() - inicio_estado;
+
+        if (duracao_estado >= acao3 && claro == estadoAcao3)
+        {
+          Serial.println("Acao 3 concluida");
+          break;
+        }
+
+        if (duracao_estado >= acao3 && claro != estadoAcao3)
+        {
+          erros++;
+          inicio_estado = millis();
+        }
+
+        if (erros >= 3)
+        {
+          gameover();
+        }
+
+        if (flag_480s)
+        {
+          gameover();
+        }
+        delay(20);
+      }
+      Serial.println("FASE 3 CONCLUIDA!");
+      break;
     }
   }
 
