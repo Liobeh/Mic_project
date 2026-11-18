@@ -20,7 +20,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 // fase 3
 bool jogo3_iniciado = false;
 bool claro_antes;
-uint16_t limite_luz = 300;
+uint16_t limite_luz = 800;
 unsigned long inicio_estado = 0;
 unsigned long acao1;
 unsigned long acao3;
@@ -31,6 +31,7 @@ uint8_t protocolo;
 uint8_t codigo;
 uint8_t condicao_inicial;
 #define ldr 1 // A1
+
 // Configuracao do teclado 4x4
 const byte linhas = 4;
 const byte colunas = 4;
@@ -113,32 +114,32 @@ void setup()
 
   Serial.begin(9600);
 
-  // ---------- inicialização da tela ------------
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
-  {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ;
-  }
+  // // ---------- inicialização da tela ------------
+  // if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  // {
+  //   Serial.println(F("SSD1306 allocation failed"));
+  //   for (;;)
+  //     ;
+  // }
 
-  display.clearDisplay();
+  // display.clearDisplay();
 
-  display.setTextSize(1); // Escala 1:1
-  display.setTextColor(SSD1306_WHITE);
+  // display.setTextSize(1); // Escala 1:1
+  // display.setTextColor(SSD1306_WHITE);
 
-  display.setCursor(0, 25); // posição do texto
+  // display.setCursor(0, 25); // posição do texto
 
-  display.print(F("Iniciando...")); // envia mensagem p/ display
-  display.println((char)7);         // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
+  // display.print(F("Iniciando...")); // envia mensagem p/ display
+  // display.println((char)7);         // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
 
-  display.display(); // faz display mostrar mensagem
+  // display.display(); // faz display mostrar mensagem
 
-  // ------- fim da inicialização da tela ---------
-  // Habilita o ADC e configura prescaler 128, material da prof
-  ADCSRA = (1 << ADEN) |
-           (1 << ADPS2) |
-           (1 << ADPS1) |
-           (1 << ADPS0);
+  // // ------- fim da inicialização da tela ---------
+  // // Habilita o ADC e configura prescaler 128, material da prof
+  // ADCSRA = (1 << ADEN) |
+  //          (1 << ADPS2) |
+  //          (1 << ADPS1) |
+  //          (1 << ADPS0);
 
   // Usa ADC0 como semente para o sorteio
   randomSeed(meu_analogRead(0));
@@ -387,6 +388,7 @@ void loop()
         if (duracao_estado >= acao1 && claro != estadoAcao1)
         {
           erros++;
+          Serial.println(erros);
           inicio_estado = millis();
         }
 
@@ -417,6 +419,7 @@ void loop()
         if (tecla != NO_KEY && tecla != numero + '0')
         {
           erros++;
+          Serial.println(erros);
         }
 
         if (erros >= 3)
@@ -451,6 +454,7 @@ void loop()
         if (duracao_estado >= acao3 && claro != estadoAcao3)
         {
           erros++;
+          Serial.println(erros);
           inicio_estado = millis();
         }
 
