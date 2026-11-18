@@ -36,7 +36,30 @@ uint8_t erros = 0;
 
 #define botao 3 
 
+#define led_1 1
+#define led_2 2
+#define led_3 3
+#define led_4 4
 
+//sequências
+const uint8_t sequencia1[] = {led_1, led_2, led_3, led_4};
+const uint8_t sequencia2[] = {led_4, led_3, led_2, led_1};
+const uint8_t sequencia3[] = {led_1, led_3, led_2, led_4};
+const uint8_t sequencia4[] = {led_3, led_2, led_4, led_1};
+
+void Sequencia (const uint8_t seq[], uint8_t passos) {
+  /* acende e desliga LEDs na ordem da lista
+  */
+  for (uint8_t i = 0; i < passos; i++) {
+    uint8_t atual = seq[i];
+
+    digitalWrite(atual, HIGH);
+    delay(500);
+    digitalWrite(atual, LOW);
+    delay(200);
+  }
+
+}
 
 void interrupcaoBotao () {
   flag_botao = true;
@@ -61,7 +84,7 @@ void setup()
 // ---------- inicialização da tela ------------
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;);
+    for(;;); // (while(1) pra idosos)
   }
 
   display.clearDisplay();
@@ -121,7 +144,7 @@ void gameover(){
 void loop(){
 
   //jogo 1
-  
+  /*
   while (1) {
     
     // os switches disponiveis sao os switches 1 a 4
@@ -200,9 +223,28 @@ void loop(){
     }
     
   }
-
+  */
   
   Serial.println("prox jogo");
   tempo_restante = tempo_limite - segundos;
   delay(5000);
+
+  // game 4
+  while(1) {
+
+
+    switch (escolhido) {
+    case 4:
+      Sequencia (sequencia1, 4);
+      break;
+    case 5:
+      Sequencia (sequencia2, 4);
+      break;
+    case 6:
+      Sequencia (sequencia3, 4);
+      break;
+    case 7:
+      Sequencia (sequencia4, 4);
+      break;
+  }
 }
