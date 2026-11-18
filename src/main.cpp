@@ -26,6 +26,7 @@ uint16_t tempo_limite = 240;
 uint16_t tempo_restante = 0;
 
 uint8_t escolhido;
+uint8_t escolhido2;
 uint8_t erros = 0;
 
 // Setup dos pinos
@@ -36,10 +37,10 @@ uint8_t erros = 0;
 
 #define botao 3 
 
-#define led_1 1
-#define led_2 2
-#define led_3 3
-#define led_4 4
+#define led_1 8
+#define led_2 9
+#define led_3 10
+#define led_4 11
 
 //sequências
 const uint8_t sequencia1[] = {led_1, led_2, led_3, led_4};
@@ -106,9 +107,15 @@ void setup()
   pinMode(chave_6,  INPUT_PULLUP);
   pinMode(chave_7,  INPUT_PULLUP);
 
+  pinMode(led_1, OUTPUT);//config dos LEDs
+  pinMode(led_2, OUTPUT); 
+  pinMode(led_3, OUTPUT); 
+  pinMode(led_4, OUTPUT); 
+
   // escolha dos elementos aleatórios
   randomSeed(analogRead(0));
   escolhido = random(4, 8); // switches do jogo 1
+  escolhido2 = random(4, 8); // sequencia do jogo 4
   
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
@@ -144,7 +151,7 @@ void gameover(){
 void loop(){
 
   //jogo 1
-  /*
+  
   while (1) {
     
     // os switches disponiveis sao os switches 1 a 4
@@ -223,7 +230,7 @@ void loop(){
     }
     
   }
-  */
+  
   
   Serial.println("prox jogo");
   tempo_restante = tempo_limite - segundos;
@@ -231,7 +238,6 @@ void loop(){
 
   // game 4
   while(1) {
-
 
     switch (escolhido) {
     case 4:
