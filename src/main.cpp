@@ -28,20 +28,23 @@ uint8_t erros = 0;
 
 // Definição de variaveis globais fase2 ADC 
 //================================
+//definindo componentes
 int LeD_amarelo     = 11;
 int LeD_azul        = 10;
 int LeD_verde       = 12;
 int Potenciometro_1 = A0;
 int Potenciometro_2 = A1;
 int buzzer          =  9;
+
+// Parte dos leds
 int configuracao_led_anterior = -1;
 int conf_amarelo = -2; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
 int conf_azul = -4;
 int conf_verde = -3;
 const int piscando = 2; // condição de quando o led pisca
-int pisca = HIGH;
 const int aceso = HIGH;
 const int apagado = LOW;
+int pisca = HIGH;
 int vetor_Leds[3] = {LeD_amarelo , LeD_azul, LeD_verde};
 unsigned long tempo_pisca = 300;
 unsigned long ultima_troca = 0;
@@ -52,6 +55,8 @@ const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferente
   {piscando, piscando, piscando},
   {apagado, piscando, aceso},
   };
+
+// Parte dos potenciometros
 bool fase2_concluida = false;
   //const int pot_maximo=;// 682<= maximo <=1023
   //const int pot_meio = ;// 341<= meio <=682
@@ -68,8 +73,16 @@ bool fase2_concluida = false;
     {minimo,     minimo},
     {maximo, min_max_3x},
   };
+  int pot_valor_lido = 0;
+  int posicao_pot_lida = 0;
   int contador_de_giros = 0;
   bool passou_pelo_minimo = 0;
+  unsigned long tempo_segurar = 1500; // tempo que o jogador deve segurarar o potenciometro na posição para validar a resposta
+  unsigned long momento_chegada = 0;
+    const int nenhuma = -1;
+  int posicao_anterior = nenhuma;
+  unsigned long tempolimite_fase_2 = 10000; // ideal 1 minuto 3600000 ms
+
 //=================================
 
 // Funções da fase2 ADC
@@ -110,11 +123,34 @@ void acender_leds() //void acender_leds():
     }
   }
   } 
-  void resposta_potenciometros()  //void resposta_potenciometros()
-{
- int pot_valor_lido = 0;
- int posicao_pot_lida = 0;
 
+//Funções de resposta dos potenciometros
+
+
+int confirmar_posicao ()
+{
+if (posicao_pot_lida != posicao_anterior)       // mudou de posição
+  {          
+    if (posicao_anterior != nenhuma)              // não é a primeira leitura
+    {           
+        momento_chegada = millis();            // chegou: começa a contar
+    
+    }
+    posicao_anterior = posicao_pot_lida;
+  }
+if (momento_chegada != 0 && millis() - momento_chegada >= tempo_segurar)
+{
+    return posicao_pot_lida;
+}
+else{
+    return nenhuma;
+}
+}
+
+  void resposta_potenciometros()  
+{
+
+int posicao_confirmada = 0;
   pot_valor_lido = analogRead(Potenciometro_1);
   if (pot_valor_lido <= 341)// condiconal de leitura de cada potenciometro,
   {
@@ -128,33 +164,32 @@ void acender_leds() //void acender_leds():
   {
       posicao_pot_lida = maximo;
   }
-  if (posicao_pot_lida == tabela_resposta_pot[configuracao_led_anterior][0])
-  {
-    fase2_concluida = true;
-  }
-  if(tabela_resposta_pot[configuracao_led_anterior][0] == nada)
-  {
-    fase2_concluida = true;
-  }
+
   if (posicao_pot_lida == minimo)
   {
     passou_pelo_minimo = true;
   }
-    if (contador_de_giros == 3 )
-  {
-      posicao_pot_lida = min_max_3x
-  }
+
   if (posicao_pot_lida == maximo && passou_pelo_minimo)
   {
     contador_de_giros ++;
     passou_pelo_minimo = false;
   }
 
-  // enquanto potenciometro_1 == valor da tabela e potenciometro_2 == valor da tabela
-     // se já se passaram tantos segundos da ativação da função led 
-     // retorna falso
-  // retorna verdadeiro
+  posicao_confirmada = confirmar_posicao (); // verificar se o jogador está esperando o tempo_segurar 
+
+  if (contador_de_giros == 3 ) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
+  {
+      posicao_confirmada = min_max_3x;
+  }
+
+  if (posicao_confirmada == tabela_resposta_pot[configuracao_led_anterior][0] || tabela_resposta_pot[configuracao_led_anterior][0] == nada)// condicional para quando a posição do potenciometro é igual a da tabela ou quando a resposta é não fazer nada
+  {
+    fase2_concluida = true;
+  }
+  Serial.println(posicao_confirmada) // verificação do valor de posicao_confirmada para teste, deve retornar -1
 }
+
 //==========================================================================================
 
 void interrupcaoBotao () {
