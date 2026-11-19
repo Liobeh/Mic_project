@@ -136,27 +136,27 @@ void setup()
 
   Serial.begin(9600);
 
-  // // ---------- inicialização da tela ------------
-  // if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
-  // {
-  //   Serial.println(F("SSD1306 allocation failed"));
-  //   for (;;)
-  //     ;
-  // }
+  // ---------- inicialização da tela ------------
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;
+  }
 
-  // display.clearDisplay();
+  display.clearDisplay();
 
-  // display.setTextSize(1); // Escala 1:1
-  // display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1); // Escala 1:1
+  display.setTextColor(SSD1306_WHITE);
 
-  // display.setCursor(0, 25); // posição do texto
+  display.setCursor(0, 25); // posição do texto
 
-  // display.print(F("Iniciando...")); // envia mensagem p/ display
-  // display.println((char)7);         // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
+  display.print(F("Iniciando...")); // envia mensagem p/ display
+  display.println((char)7);         // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
 
-  // display.display(); // faz display mostrar mensagem
+  display.display(); // faz display mostrar mensagem
 
-  // // ------- fim da inicialização da tela ---------
+  // ------- fim da inicialização da tela ---------
   // Habilita o ADC e configura prescaler 128, material da prof
   ADCSRA = (1 << ADEN) |
            (1 << ADPS2) |
@@ -232,85 +232,85 @@ void loop()
 
   // jogo 1
 
-  // while (1)
-  // {
+  while (1)
+  {
 
-  //   // os switches disponiveis sao os switches 1 a 4
+    // os switches disponiveis sao os switches 1 a 4
 
-  //   // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
-  //   // o jogador com o manual deve descobrir qual eh o switch correto para ligar
-  //   // o jogador com a bomba liga o switch e aperta um botao de confirmacao
+    // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
+    // o jogador com o manual deve descobrir qual eh o switch correto para ligar
+    // o jogador com a bomba liga o switch e aperta um botao de confirmacao
 
-  //   // display
+    // display
 
-  //   display.clearDisplay();
+    display.clearDisplay();
 
-  //   display.setTextSize(1);
-  //   display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
 
-  //   display.setCursor(0, 20);
+    display.setCursor(0, 20);
 
-  //   // escolhe um códgio diferente p/ cada switch
-  //   switch (escolhido)
-  //   {
-  //   case 4:
-  //     display.println(F("KEY-8B52-O1"));
-  //     break;
-  //   case 5:
-  //     display.println(F("KEY-BB52-01"));
-  //     break;
-  //   case 6:
-  //     display.println(F("KEY-8B5Z-0l"));
-  //     break;
-  //   case 7:
-  //     display.println(F("KEY-B8SZ-Ol"));
-  //     break;
-  //   }
+    // escolhe um códgio diferente p/ cada switch
+    switch (escolhido)
+    {
+    case 4:
+      display.println(F("KEY-8B52-O1"));
+      break;
+    case 5:
+      display.println(F("KEY-BB52-01"));
+      break;
+    case 6:
+      display.println(F("KEY-8B5Z-0l"));
+      break;
+    case 7:
+      display.println(F("KEY-B8SZ-Ol"));
+      break;
+    }
 
-  //   display.display();
+    display.display();
 
-  //   if (flag_botao)
-  //   {
-  //     flag_botao = false;
+    if (flag_botao)
+    {
+      flag_botao = false;
 
-  //     Serial.println("BOTAO PRESSIONADO!");
+      Serial.println("BOTAO PRESSIONADO!");
 
-  //     // IA
+      // IA
 
-  //     // Identifica o bit correspondente ao switch sorteado
-  //     uint8_t mascara = (1 << escolhido);
+      // Identifica o bit correspondente ao switch sorteado
+      uint8_t mascara = (1 << escolhido);
 
-  //     // Define a combinação correta dos quatro switches
-  //     uint8_t esperado = 0b11110000 & ~mascara;
+      // Define a combinação correta dos quatro switches
+      uint8_t esperado = 0b11110000 & ~mascara;
 
-  //     // Verifica se somente o switch sorteado está ligado
-  //     if ((PIND & 0b11110000) == esperado)
-  //     {
-  //       Serial.println("SWITCH CORRETO!");
-  //       break;
-  //     }
+      // Verifica se somente o switch sorteado está ligado
+      if ((PIND & 0b11110000) == esperado)
+      {
+        Serial.println("SWITCH CORRETO!");
+        break;
+      }
 
-  //     else
-  //     {
-  //       erros++;
-  //       Serial.println(erros);
-  //     }
+      else
+      {
+        erros++;
+        Serial.println(erros);
+      }
 
-  //   }
+    }
 
-  //   // precisamos manter a checagem da interrupcao e dos erros
+    // precisamos manter a checagem da interrupcao e dos erros
 
-  //   if (erros >= 3)
-  //   {
-  //     gameover();
-  //   }
+    if (erros >= 3)
+    {
+      gameover();
+    }
 
-  //   if (flag_480s)
-  //   {
-  //     gameover();
-  //     flag_480s = false;
-  //   }
-  // }
+    if (flag_480s)
+    {
+      gameover();
+      flag_480s = false;
+    }
+  }
 
   // Fase 3 - Protocolo de Emergencia
 
