@@ -24,7 +24,7 @@ uint16_t limite_luz = 800;
 unsigned long inicio_estado = 0;
 unsigned long acao1;
 unsigned long acao3;
-bool estadoAcao1; 
+bool estadoAcao1;
 bool estadoAcao3;
 uint8_t escolhido;
 uint8_t escolhido2;
@@ -55,21 +55,22 @@ Keypad teclado = Keypad(
     linhas,
     colunas);
 
-//interrupcoes
-volatile bool flag_480s = false; // flag tempo
-
+// interrupcoes
+volatile bool flag_480s = false;  // flag tempo
 volatile bool flag_botao = false; // flag botao pressionado
 
-//timers
+// timers
+volatile uint32_t ms = 0;
+volatile uint16_t contador_ms = 0;
 volatile uint16_t segundos = 0; // timer
 const uint16_t tempo_limite = 480;
 uint16_t tempo_restante = 0;
 
-//erros
+// erros
 uint8_t erros = 0;
 
-//fase1
-// Setup dos pinos
+// fase1
+//  Setup dos pinos
 #define chave_4 4
 #define chave_5 5
 #define chave_6 6
@@ -124,14 +125,36 @@ ISR(INT1_vect)
   flag_botao = true;
 }
 
-ISR(TIMER1_COMPA_vect) // chamada a cada 1s, material da prof
+ISR(TIMER1_COMPA_vect)
 {
-  segundos++;
+  ms++;
+}
 
-  if (segundos >= tempo_limite)
-  { // checagem de 8 mins
-    flag_480s = true;
+ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
+{
+  contador_ms++;
+
+  if (contador_ms >= 1000)
+  {
+    contador_ms = 0;
+    segundos++;
+
+    if (segundos >= tempo_limite)
+    {
+      flag_480s = true;
+    }
   }
+}
+
+uint32_t meu_millis()
+{
+  uint8_t estado = SREG;
+  cli();
+
+  uint32_t tempo = ms;
+
+  SREG = estado;
+  return tempo;
 }
 
 void setup()
@@ -139,31 +162,32 @@ void setup()
 
   Serial.begin(9600);
 
-// ---------- inicialização da tela ------------
-/*
-  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+  // ---------- inicialização da tela ------------
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+  {
     Serial.println(F("SSD1306 allocation failed"));
-    for(;;); // (while(1) pra idosos)
+    for (;;)
+      ;
   }
 
-   display.clearDisplay();
+  display.clearDisplay();
 
-   display.setTextSize(1); // Escala 1:1
-   display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1); // Escala 1:1
+  display.setTextColor(SSD1306_WHITE);
 
-   display.setCursor(0, 25); // posição do texto
+  display.setCursor(0, 25); // posição do texto
 
-   display.print(F("Iniciando...")); // envia mensagem p/ display
-   display.println((char)7);         // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
+  display.print(F("Iniciando...")); // envia mensagem p/ display
+  display.println((char)7);         // Envia caracteres (ver https://www.ascii-codes.com/, CP 437 )
 
-   display.display(); // faz display mostrar mensagem
-*/
-// ------ fim da inicialização da tela ---------
-   // Habilita o ADC e configura prescaler 128, material da prof
-   ADCSRA = (1 << ADEN) |
-            (1 << ADPS2) |
-            (1 << ADPS1) |
-            (1 << ADPS0);
+  display.display(); // faz display mostrar mensagem
+
+  // ------- fim da inicialização da tela ---------
+  // Habilita o ADC e configura prescaler 128, material da prof
+  ADCSRA = (1 << ADEN) |
+           (1 << ADPS2) |
+           (1 << ADPS1) |
+           (1 << ADPS0);
 
   // Usa ADC0 como semente para o sorteio
   randomSeed(meu_analogRead(0));
@@ -213,12 +237,24 @@ void setup()
   EIFR = 0b10;
   EIMSK = 0b10;
 
-  // Setup do timer
-  TCCR1A = 0;                          /* nenhum pino ligado ao timer */
-  TCCR1B = 0;                          /* timer parado durante a configuração */
-  OCR1A = 62499;                       /* 62 500 passos de 16 us = 1 s */
-  TIMSK1 = (1 << OCIE1A);              /* interrupção de comparação A */
-  TCCR1B = (1 << WGM12) | (1 << CS12); /* modo CTC + prescaler 256 */
+  // Timer1 em CTC - interrupcao a cada 1 ms
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+
+  OCR1A = 249;
+  TIMSK1 = (1 << OCIE1A);
+  TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10);
+
+  // Timer2 em CTC - interrupcao a cada 1 ms
+  TCCR2A = 0;
+  TCCR2B = 0;
+  TCNT2 = 0;
+
+  TCCR2A = (1 << WGM21);
+  OCR2A = 249;
+  TIMSK2 = (1 << OCIE2A);
+  TCCR2B = (1 << CS22);
 
   sei();
 }
@@ -227,7 +263,7 @@ void setup()
 void gameover()
 {
   flag_480s = false;
-  TCCR1B = 0; /* timer parado */
+  TCCR2B = 0; /* timer parado */
   Serial.println("Game Over");
   Serial.println("Faça tal para reiniciar o jogo");
   while (1)
@@ -240,7 +276,6 @@ void loop()
 
 // jogo 1
 
-/*
   while (1)
   {
 
@@ -302,7 +337,24 @@ void loop()
       else
       {
         erros++;
-        Serial.println(
+        Serial.println(erros);
+      }
+
+    }
+
+    // precisamos manter a checagem da interrupcao e dos erros
+
+    if (erros >= 3)
+    {
+      gameover();
+    }
+
+    if (flag_480s)
+    {
+      gameover();
+      flag_480s = false;
+    }
+  }
 
   // Fase 3 - Protocolo de Emergencia
 
@@ -325,7 +377,7 @@ void loop()
 
         // Registra o estado inicial do LDR
         claro_antes = (meu_analogRead(ldr) < limite_luz);
-        inicio_estado = millis();
+        inicio_estado = meu_millis();
 
         Serial.println("FASE 3 INICIADA!");
       }
@@ -367,7 +419,7 @@ void loop()
 
       case 3: // GAMA
         estadoAcao1 = condicao_inicial;
-        estadoAcao3 = !estadoAcao1; 
+        estadoAcao3 = !estadoAcao1;
         numero = codigo + 3;
         acao3 = 4000;
 
@@ -377,8 +429,8 @@ void loop()
           acao1 = 5000;
 
         break;
-      
-        case 4: // DELTA
+
+      case 4: // DELTA
         estadoAcao1 = !condicao_inicial;
         estadoAcao3 = estadoAcao1;
         numero = codigo + 4;
@@ -392,7 +444,6 @@ void loop()
         break;
       }
 
-      
       while (1)
       {
         uint16_t luminosidade = meu_analogRead(ldr);
@@ -400,11 +451,11 @@ void loop()
 
         if (claro != claro_antes)
         {
-          inicio_estado = millis();
+          inicio_estado = meu_millis();
           claro_antes = claro;
         }
 
-        unsigned long duracao_estado = millis() - inicio_estado;
+        unsigned long duracao_estado = meu_millis() - inicio_estado;
 
         if (duracao_estado >= acao1 && claro == estadoAcao1)
         {
@@ -416,7 +467,7 @@ void loop()
         {
           erros++;
           Serial.println(erros);
-          inicio_estado = millis();
+          inicio_estado = meu_millis();
         }
 
         if (erros >= 3)
@@ -438,7 +489,7 @@ void loop()
         {
           Serial.println("Acao 2 completa");
 
-          inicio_estado = millis();
+          inicio_estado = meu_millis();
           claro_antes = (meu_analogRead(ldr) < limite_luz);
           break;
         }
@@ -466,11 +517,11 @@ void loop()
 
         if (claro != claro_antes)
         {
-          inicio_estado = millis();
+          inicio_estado = meu_millis();
           claro_antes = claro;
         }
 
-        unsigned long duracao_estado = millis() - inicio_estado;
+        unsigned long duracao_estado = meu_millis() - inicio_estado;
 
         if (duracao_estado >= acao3 && claro == estadoAcao3)
         {
@@ -482,7 +533,7 @@ void loop()
         {
           erros++;
           Serial.println(erros);
-          inicio_estado = millis();
+          inicio_estado = meu_millis();
         }
 
         if (erros >= 3)
