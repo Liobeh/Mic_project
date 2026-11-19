@@ -77,16 +77,23 @@ uint8_t erros = 0;
 #define chave_7 7
 #define botao 3
 
-#define led_1 8
-#define led_2 9
-#define led_3 10
-#define led_4 11
+#define led_1 4 // mudar depois de implementar o I2C (!)
+#define led_2 5
+#define led_3 6
+#define led_4 7
 
 //sequências
 const uint8_t sequencia1[] = {led_1, led_2, led_3, led_4};
 const uint8_t sequencia2[] = {led_4, led_3, led_2, led_1};
 const uint8_t sequencia3[] = {led_1, led_3, led_2, led_4};
 const uint8_t sequencia4[] = {led_3, led_2, led_4, led_1};
+
+// códigos p/ cada sequência.
+const char codigo_seq1[] = {'1','2','3','4'};
+const char codigo_seq2[] = {'4','3','2','1'};
+const char codigo_seq3[] = {'4','4','3','4'};
+const char codigo_seq4[] = {'1','2','2','1'};
+ 
 
 void Sequencia (const uint8_t seq[], uint8_t passos) {
   /* acende e desliga LEDs na ordem da lista
@@ -99,7 +106,23 @@ void Sequencia (const uint8_t seq[], uint8_t passos) {
     digitalWrite(atual, LOW);
     delay(200);
   }
-  delay(1000)
+}
+
+void TocaSequencia () {
+  switch (escolhido2) {
+      case 4:
+        Sequencia (sequencia1, 4);
+        break;
+      case 5:
+        Sequencia (sequencia2, 4);
+        break;
+      case 6:
+        Sequencia (sequencia3, 4);
+        break;
+      case 7:
+        Sequencia (sequencia4, 4);
+        break;
+      }
 }
 
 // Leitura de um canal analogico, material da prof
@@ -195,10 +218,6 @@ void setup()
   Serial.print("Switch sorteado: ");
   Serial.println(escolhido);
 
-  escolhido2 = random(4, 8);
-  Serial.print("Sequencia sorteada: ");
-  Serial.println(escolhido2);
-
   protocolo = random(1, 5);
   Serial.print("Protocolo sorteado: ");
   Serial.println(protocolo);
@@ -211,22 +230,18 @@ void setup()
   Serial.print("Condicao inicial sorteada: ");
   Serial.println(condicao_inicial);
 
+  escolhido2 = random(4, 8);
+  Serial.print("Sequencia sorteada: ");
+  Serial.println(escolhido2);
+
   // config pinos para a fase1
-// ------- fim da inicialização da tela ---------
 
-  pinMode(chave_4,  INPUT_PULLUP); // config dos switches 
-  pinMode(chave_5,  INPUT_PULLUP);
-  pinMode(chave_6,  INPUT_PULLUP);
-  pinMode(chave_7,  INPUT_PULLUP);
-
-  pinMode(led_1, OUTPUT);//config dos LEDs
+  pinMode(led_1, OUTPUT); //config dos LEDs (trocar por DDRD e PORTD)
   pinMode(led_2, OUTPUT); 
   pinMode(led_3, OUTPUT); 
   pinMode(led_4, OUTPUT); 
-
-
   
-  DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7));
+  DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)); // config dos switches
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
 
   // setup registradores principais
@@ -276,7 +291,7 @@ void loop()
 
 // jogo 1
 
-  while (1)
+/*   while (1)
   {
 
     // os switches disponiveis sao os switches 1 a 4
@@ -354,7 +369,7 @@ void loop()
       gameover();
       flag_480s = false;
     }
-  }
+  } */
 
   // Fase 3 - Protocolo de Emergencia
 
@@ -562,20 +577,9 @@ void loop()
     if (erros >= 3 || flag_480s) {
   gameover();
 }
+char tecla = teclado.getKey();
 
-    switch (escolhido2) {
-    case 4:
-      Sequencia (sequencia1, 4);
-      break;
-    case 5:
-      Sequencia (sequencia2, 4);
-      break;
-    case 6:
-      Sequencia (sequencia3, 4);
-      break;
-    case 7:
-      Sequencia (sequencia4, 4);
-      break;
-    }
+if (tecla != NO_KEY) {
+  // verificar se o código esta certo
   }
 }
