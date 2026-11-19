@@ -127,10 +127,10 @@ uint8_t erros = 0;
 #define chave_7 7
 #define botao 3
 
-#define led_1 4 // mudar depois de implementar o I2C (!)
-#define led_2 5
-#define led_3 6
-#define led_4 7
+#define led_1 8
+#define led_2 9
+#define led_3 10
+#define led_4 11
 
 //sequências
 const uint8_t sequencia1[] = {led_1, led_2, led_3, led_4};
@@ -288,9 +288,9 @@ void setup()
 
   // config pinos para a fase1
 
-  pinMode(led_1, OUTPUT); //config dos LEDs (trocar por DDRD e PORTD)
-  pinMode(led_2, OUTPUT); 
-  pinMode(led_3, OUTPUT); 
+  pinMode(led_1, OUTPUT); //config dos LEDs
+  pinMode(led_2, OUTPUT); // trocar função por registradores
+  pinMode(led_3, OUTPUT); // (que nem no codigo em baixo)
   pinMode(led_4, OUTPUT); 
   
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)); // config dos switches
@@ -625,13 +625,15 @@ void loop()
   delay(5000);
 */
   // game 4
+  TocaSequencia();
   while(1) {
     if (erros >= 3 || flag_480s) {
-  gameover();
-}
-char tecla = teclado.getKey();
+    gameover();
+    }
+    char tecla = lerTeclaNova();
 
-if (tecla != NO_KEY) {
-  // verificar se o código esta certo
+    if (tecla != '\0') {
+    
+    }
   }
 }
