@@ -625,15 +625,21 @@ void loop()
   delay(5000);
 */
   // game 4
-  TocaSequencia();
+  TocaSequencia(); // toca a seq. 1 vez
   while(1) {
     if (erros >= 3 || flag_480s) {
     gameover();
     }
     char tecla = lerTeclaNova();
+    bool PodeTocarDenovo = true;
 
     if (tecla != '\0') {
-    
+      if (tecla != '*') {
+        if (PodeTocarDenovo) {
+          TocaSequencia();
+          PodeTocarDenovo = false;
+        }
+      }
     }
   }
 }
