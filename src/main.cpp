@@ -1,7 +1,6 @@
 // Libraries
 #include <Arduino.h>
 #include <stdlib.h>
-#include <Keypad.h>
 
 // Bibliotecas p/ tela
 #include <Wire.h>
@@ -32,27 +31,78 @@ uint8_t codigo;
 uint8_t condicao_inicial;
 #define ldr 1 // A1
 
-// Configuracao do teclado 4x4
-const byte linhas = 4;
-const byte colunas = 4;
+// Keypad 4x3 conectado ao PCF8574T via I2C
+#define PCF 0x27
 
-char teclas[4][4] = {
-    {'1', '2', '3', 'A'},
-    {'4', '5', '6', 'B'},
-    {'7', '8', '9', 'C'},
-    {'*', '0', '#', 'D'}};
+byte pinosLinhas[4] = {0, 1, 2, 4};
+byte pinosColunas[3] = {5, 6, 7};
 
-// Pinos conectados ao teclado
-byte pinosLinhas[4] = {8, 9, 10, 11};
-byte pinosColunas[4] = {12, 13, A2, A3};
+char teclas[4][3] = {
+    {'1', '2', '3'},
+    {'4', '5', '6'},
+    {'7', '8', '9'},
+    {'*', '0', '#'}};
 
-// Cria o objeto teclado
-Keypad teclado = Keypad(
-    makeKeymap(teclas),
-    pinosLinhas,
-    pinosColunas,
-    linhas,
-    colunas);
+void escreverPCF(byte valor)
+{
+  Wire.beginTransmission(PCF);
+  Wire.write(valor);
+  Wire.endTransmission();
+}
+
+byte lerPCF()
+{
+  Wire.requestFrom(PCF, 1);
+
+  if (Wire.available())
+    return Wire.read();
+
+  return 0xFF;
+}
+
+char lerTeclado()
+{
+  for (int i = 0; i < 4; i++)
+  {
+    byte estado = 0xFF;
+
+    estado &= ~(1 << pinosLinhas[i]);
+
+    escreverPCF(estado);
+    delayMicroseconds(100);
+
+    byte leitura = lerPCF();
+
+    for (int j = 0; j < 3; j++)
+    {
+      if (!(leitura & (1 << pinosColunas[j])))
+      {
+        escreverPCF(0xFF);
+        return teclas[i][j];
+      }
+    }
+  }
+
+  escreverPCF(0xFF);
+  return '\0';
+}
+
+char lerTeclaNova()
+{
+    static char anterior = '\0';
+
+    char atual = lerTeclado();
+    char resultado = '\0';
+
+    if (atual != '\0' && anterior == '\0')
+    {
+        resultado = atual;
+    }
+
+    anterior = atual;
+
+    return resultado;
+}
 
 // interrupcoes
 volatile bool flag_480s = false;  // flag tempo
@@ -135,6 +185,8 @@ void setup()
 {
 
   Serial.begin(9600);
+  Wire.begin();
+  escreverPCF(0xFF);
 
   // ---------- inicialização da tela ------------
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
@@ -317,7 +369,7 @@ void loop()
   while (1)
   {
 
-    char tecla = teclado.getKey();
+    char tecla = lerTeclaNova();
 
     // Preparacao da fase
     if (!jogo3_iniciado)
@@ -439,7 +491,7 @@ void loop()
       }
       while (1)
       {
-        tecla = teclado.getKey();
+        tecla = lerTeclaNova();
         if (tecla == numero + '0')
         {
           Serial.println("Acao 2 completa");
@@ -449,7 +501,7 @@ void loop()
           break;
         }
 
-        if (tecla != NO_KEY && tecla != numero + '0')
+        if (tecla != '\0' && tecla != numero + '0')
         {
           erros++;
           Serial.println(erros);
