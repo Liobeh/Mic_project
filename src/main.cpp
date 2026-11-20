@@ -26,28 +26,23 @@ uint8_t erros = 0;
 
 #define botao 3 
 
+
+
+
 // Definição de variaveis globais fase2 ADC 
 //================================
 //definindo componentes
 int LeD_amarelo     = 11;
 int LeD_azul        = 10;
 int LeD_verde       = 12;
-int Potenciometro_1 = A0;
-int Potenciometro_2 = A1;
+int Potenciometro_1 = A2;
+int Potenciometro_2 = A3;
 int buzzer          =  9;
 
 // Parte dos leds
-int configuracao_led_anterior = -1;
-int conf_amarelo = -2; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
-int conf_azul = -4;
-int conf_verde = -3;
 const int piscando = 2; // condição de quando o led pisca
 const int aceso = HIGH;
 const int apagado = LOW;
-int pisca = HIGH;
-int vetor_Leds[3] = {LeD_amarelo , LeD_azul, LeD_verde};
-unsigned long tempo_pisca = 300;
-unsigned long ultima_troca = 0;
 const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferentes configurações de leds acesos
   // amarelo, azul, verde
   {aceso, aceso, apagado},
@@ -55,17 +50,22 @@ const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferente
   {piscando, piscando, piscando},
   {apagado, piscando, aceso},
   };
+int configuracao_led_anterior = -1;
+int conf_amarelo = -2; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
+int conf_azul = -4;
+int conf_verde = -3;
+int pisca = HIGH;
+int vetor_Leds[3] = {LeD_amarelo , LeD_azul, LeD_verde};
+unsigned long tempo_pisca = 300;
+unsigned long ultima_troca = 0;
 
 // Parte dos potenciometros
-bool fase2_concluida = false;
-  //const int pot_maximo=;// 682<= maximo <=1023
-  //const int pot_meio = ;// 341<= meio <=682
-  //const int pot_minimo= ;// 0<= minimo <=341
-  const int min_max_3x= -15;
+  const int min_max_3x= -15; 
   const int nada = -20;
-  const int meio = -11;
-  const int minimo = -9;
-  const int maximo = -16;
+  const int meio = -11;   // 341<= meio <=682
+  const int minimo = -9;  // 0<= minimo <=341
+  const int maximo = -16; // 682<= maximo <=1023
+  const int nenhuma = -1;
   const int tabela_resposta_pot[4][2]={ // tabela de respostas com potenciometros para cada configuração de leds 
     // pot1      pot2
     {min_max_3x,   nada},
@@ -73,20 +73,26 @@ bool fase2_concluida = false;
     {minimo,     minimo},
     {maximo, min_max_3x},
   };
-  int pot_valor_lido = 0;
-  int posicao_pot_lida = 0;
-  int contador_de_giros = 0;
-  bool passou_pelo_minimo = 0;
+  int pot_valor_lido[2] = {0,0};
+  int posicao_pot_lida[2] = {0,0};
+  int contador_de_giros[2] = {0,0};
+  int posicao_anterior[2] = {nenhuma, nenhuma};
+  int vetor_pot[2]= {Potenciometro_1,Potenciometro_2};
+  bool passou_pelo_minimo[2]= {0,0};
+  bool fase2_concluida = false;
+  bool fase2_falhou = false;
   unsigned long tempo_segurar = 1500; // tempo que o jogador deve segurarar o potenciometro na posição para validar a resposta
-  unsigned long momento_chegada = 0;
-    const int nenhuma = -1;
-  int posicao_anterior = nenhuma;
-  unsigned long tempolimite_fase_2 = 10000; // ideal 1 minuto 3600000 ms
+  unsigned long momento_chegada[2] = {0,0};
+  unsigned long tempolimite_fase_2 = 10000; // ideal 1 minuto 60000 ms
+  unsigned long momento_inicio = 0;
 
 //=================================
 
+
+
+
 // Funções da fase2 ADC
-//===================================================================================
+//=================================================================================================================================================================================
 void acender_leds() //void acender_leds(): 
   {
   int configuracao_led_escolhida = random(0,4);   // um gerador pseudoaletório o qual indica uma das configurações para acender
@@ -103,7 +109,7 @@ void acender_leds() //void acender_leds():
   digitalWrite(LeD_amarelo,conf_amarelo);  // configuração do led amarelo:
   digitalWrite(LeD_azul,conf_azul);  // e configuração do led azul:
   digitalWrite(LeD_verde,conf_verde);  // configuração do led verde: 
-
+  momento_inicio = millis();
   }
 
   void pisca_led()
@@ -125,72 +131,135 @@ void acender_leds() //void acender_leds():
   } 
 
 //Funções de resposta dos potenciometros
-
-
-int confirmar_posicao ()
+int converter_posicao(int leitura_pot)
 {
-if (posicao_pot_lida != posicao_anterior)       // mudou de posição
+
+  if (leitura_pot <= 341)// condiconal de leitura de cada potenciometro,
+  {
+      return minimo;
+  } 
+  else if (leitura_pot <= 682)// condicional de leitura de cada potenciometro,
+  {
+      return meio;
+  } 
+  else// condicional de leitura de cada potenciometro,
+  {
+      return maximo;
+  }
+}
+
+
+
+
+
+
+int confirmar_posicao (int indice_pot)          // indice_pot = 0 ou = 1
+{
+if (posicao_pot_lida[indice_pot] != posicao_anterior[indice_pot])       // mudou de posição
   {          
-    if (posicao_anterior != nenhuma)              // não é a primeira leitura
+    if (posicao_anterior[indice_pot] != nenhuma)              // não é a primeira leitura
     {           
-        momento_chegada = millis();            // chegou: começa a contar
+        momento_chegada[indice_pot] = millis();            // chegou: começa a contar
     
     }
-    posicao_anterior = posicao_pot_lida;
+    posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
   }
-if (momento_chegada != 0 && millis() - momento_chegada >= tempo_segurar)
+if (momento_chegada[indice_pot] != 0 && millis() - momento_chegada[indice_pot] >= tempo_segurar)
 {
-    return posicao_pot_lida;
+    return posicao_pot_lida[indice_pot];
 }
 else{
     return nenhuma;
 }
 }
 
+
+
+
+
   void resposta_potenciometros()  
 {
 
 int posicao_confirmada = 0;
-  pot_valor_lido = analogRead(Potenciometro_1);
-  if (pot_valor_lido <= 341)// condiconal de leitura de cada potenciometro,
+
+if (fase2_concluida || fase2_falhou) // já terminou?
   {
-      posicao_pot_lida= minimo;
+    return;//sai da função
+  }
+
+if (millis() - momento_inicio >= tempolimite_fase_2) // tempo esgotado?
+  {
+    fase2_falhou = true;
+    erros ++;                                 // conta um erro para a
+    return;
+  }
+
+
+
+bool certo[2] = {false, false};                 // um por potenciômetro
+for (int indice = 0; indice < 2; indice++)
+{
+  pot_valor_lido[indice] = analogRead(vetor_pot[indice]);
+
+  if (pot_valor_lido[indice] <= 341)// condiconal de leitura de cada potenciometro,
+  {
+      posicao_pot_lida[indice]= minimo;
   } 
-  else if (pot_valor_lido <= 682)// condicional de leitura de cada potenciometro,
+  else if (pot_valor_lido[indice] <= 682)// condicional de leitura de cada potenciometro,
   {
-      posicao_pot_lida = meio;
+      posicao_pot_lida[indice] = meio;
   } 
   else// condicional de leitura de cada potenciometro,
   {
-      posicao_pot_lida = maximo;
+      posicao_pot_lida[indice] = maximo;
   }
 
-  if (posicao_pot_lida == minimo)
+  if (posicao_pot_lida[indice] == minimo)
   {
-    passou_pelo_minimo = true;
+    passou_pelo_minimo[indice] = true;
   }
 
-  if (posicao_pot_lida == maximo && passou_pelo_minimo)
+  if (posicao_pot_lida[indice] == maximo && passou_pelo_minimo[indice])
   {
-    contador_de_giros ++;
-    passou_pelo_minimo = false;
+    contador_de_giros[indice] ++;
+    passou_pelo_minimo[indice] = false;
   }
 
-  posicao_confirmada = confirmar_posicao (); // verificar se o jogador está esperando o tempo_segurar 
+  posicao_confirmada = confirmar_posicao (indice); // verificar se o jogador está esperando o tempo_segurar 
 
-  if (contador_de_giros == 3 ) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
+  if (contador_de_giros[indice] == 3 ) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
   {
       posicao_confirmada = min_max_3x;
   }
 
-  if (posicao_confirmada == tabela_resposta_pot[configuracao_led_anterior][0] || tabela_resposta_pot[configuracao_led_anterior][0] == nada)// condicional para quando a posição do potenciometro é igual a da tabela ou quando a resposta é não fazer nada
+  if (posicao_confirmada == tabela_resposta_pot[configuracao_led_anterior][indice] || tabela_resposta_pot[configuracao_led_anterior][indice] == nada)// condicional para quando a posição do potenciometro é igual a da tabela ou quando a resposta é não fazer nada
   {
-    fase2_concluida = true;
+    certo[indice] = true;
   }
-  Serial.println(posicao_confirmada) // verificação do valor de posicao_confirmada para teste, deve retornar -1
+  }
+  if(certo[0] && certo[1])
+  {
+    fase2_concluida =true;
+  }
+  Serial.println(posicao_confirmada); // verificação do valor de posicao_confirmada para teste, deve retornar -1
 }
 
-//==========================================================================================
+
+void nova_tentativa_fase_2()
+{
+  fase2_falhou = false;
+  fase2_concluida = false;
+  contador_de_giros[0] = 0;
+  contador_de_giros[1] = 0;
+  passou_pelo_minimo[0] = false;
+  passou_pelo_minimo[1] = false;
+  posicao_anterior[0] = nenhuma;
+  posicao_anterior[1] = nenhuma;
+  momento_chegada[0] = 0;
+  momento_chegada[1] = 0;
+  acender_leds(); // chama acender_leds para a nova tentativa ter outro padrão de leds 
+}
+//============================================================================================================================================================================
 
 void interrupcaoBotao () {
   flag_botao = true;
@@ -220,7 +289,7 @@ void setup()
 
   // configuração de pinos da Fase 2 
   //====================================================
-  randomSeed(analogRead(A5)); // analogRead(A5) é a semente de aleatoriedade 
+  // analogRead(A0) é a semente de aleatoriedade 
   pinMode(LeD_azul, OUTPUT);
   pinMode(LeD_amarelo, OUTPUT);
   pinMode(LeD_verde, OUTPUT);
@@ -265,8 +334,8 @@ void gameover(){
 
 void loop(){
 
-  //jogo 1
-  
+//jogo 1
+//=================================================================
   while (1) {
     
     // os switches disponiveis sao os switches 1 a 4
@@ -298,6 +367,7 @@ void loop(){
       else {
         erros++;
         Serial.println(erros);
+        tone(buzzer, 300, 300);   //botar barulho do buzer aqui: tone(pino, frequencia_Hz, duracao_ms)
       }
 
       flag_botao = false;
@@ -317,8 +387,42 @@ void loop(){
     }
     
   }
+//====================================================================
 
-  
+
+
+// Jogo 2
+//====================================================================
+nova_tentativa_fase_2();          // começa a fase: sorteia a 1ª configuração
+
+while (true)
+{
+    pisca_led();
+    resposta_potenciometros();
+
+    if (fase2_falhou)
+    { 
+      tone(buzzer, 300, 300);   //tone(pino, frequencia, duracao);
+      nova_tentativa_fase_2();
+    }
+    if (fase2_concluida) 
+    {
+      break;
+    }
+
+    //precisamos manter a checagem da interrupcao e dos erros
+    
+    if (erros >= 3){
+      gameover(); 
+      
+    }
+    
+    if(flag_480s) {
+     gameover();
+     flag_480s = false;
+    }
+}
+//====================================================================
   Serial.println("prox jogo");
   tempo_restante = tempo_limite - segundos;
   delay(5000);
