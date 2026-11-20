@@ -35,6 +35,7 @@ uint8_t condicao_inicial;
 uint8_t escolhido2;
 bool PodeTocarDenovo = true;
 uint8_t digito = 0;
+char tentativa[6];
 
 // Keypad 4x3 conectado ao PCF8574T via I2C
 #define PCF 0x27
@@ -145,11 +146,11 @@ const uint8_t sequencias[4][4] = {
 };
 
 // códigos p/ cada sequência.
-const char codigo_sequencias[4][4] = {
-  {'1','2','3','4'}, // seq1
-  {'4','3','2','1'}, // seq2
-  {'1','3','2','4'}, // seq3
-  {'3','2','4','1'}};// seq4
+const char codigo_sequencias[4][6] = {
+  {'7','7','3','8','9','4'}, // seq1
+  {'7','7','3','4','9','2'}, // seq2
+  {'7','1','3','8','9','2'}, // seq3
+  {'7','7','8','4','6','2'}};// seq4
  
 
 void Sequencia (const uint8_t seq[], uint8_t passos) {
@@ -335,9 +336,9 @@ void gameover()
 void loop()
 {
 
-// jogo 1
+  // jogo 1
 
-/*   while (1)
+  /*   while (1)
   {
 
     // os switches disponiveis sao os switches 1 a 4
@@ -618,10 +619,36 @@ void loop()
   tempo_restante = tempo_limite - segundos;
   delay(5000);
 */
-// game 4
-TocaSequencia(); // toca a seq. 1 vez
-while(1) 
-{
+  // game 4
+  /* 
+  LEDs acendem em uma sequência específica
+  Cada sequência corresponde a um código de 6 digitos que precisa ser digitado no Keypad
+  O jogador pode tocar a sequência novamente uma única vez.
+  Digitar um código de 6 digitos errado conta como 1 erro.
+  sequências: (Cores a detrminar)
+      seq1: LED 1, LED 2, LED 3, LED 4 
+      seq2: LED 4, LED 3, LED 2, LED 1
+      seq3: LED 1, LED 3, LED 2, LED 4
+      seq4: LED 3, LED 2, LED 4, LED 1
+  códigos:
+      seq1: 773894
+      seq2: 773492
+      seq3: 713892
+      seq4: 778462
+  */
+
+  display.clearDisplay();
+
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 20);
+
+  display.println(F("*: tocar novamente")); //testar como fica no display
+  display.display();
+  TocaSequencia(); // toca a seq. 1 vez
+
+  while(1) 
+  {
     if (erros >= 3 || flag_480s) {
     gameover();
     }
@@ -635,28 +662,48 @@ while(1)
         {
           TocaSequencia();
           PodeTocarDenovo = false;
+          display.println(F("Replay usado")); //testar como fica no display
+          Serial.println("Replay usado");
         }
       }
-      
-      else if (digito < 4)
+      else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
       {
-        if (tecla == codigo_sequencias[escolhido2][digito])
+        digito = 0;
+        Serial.println(F("Entrada limpa"));
+      }
+
+      else if (digito < 6)
+      {
+        tentativa[digito] = tecla;
+        digito++;
+        Serial.print(F("Digitado: "));
+        Serial.println(tecla);
+        }
+    }
+    if (digito >= 6)
+      {
+        bool correto = true;
+        for (uint8_t i = 0; i < 6; i++)
         {
-          Serial.println("Digito Correto");
-          digito++;
+          if (tentativa[i] != codigo_sequencias[escolhido2][i])
+          {
+            correto = false;
+            break;
+          }
+        }
+        if (correto)
+        {
+          Serial.println(F("Sequencia correta. Jogo Encerrado")); // 
+          break;
         }
         else
         {
-          Serial.println("Digito Incorreto");
+          Serial.println(F("Codigo Incorreto"));
           erros++;
           Serial.println(erros);
+          digito = 0;
         }
       }
-    }
-    if (digito >= 4)
-    {
-      Serial.println("Sequência correta. Jogo Encerrado");
-      break;
-    }
   }
+  while (1){} // pausa o jogo pra ele não resetar automaticamente
 }
