@@ -26,11 +26,15 @@ unsigned long acao3;
 bool estadoAcao1;
 bool estadoAcao3;
 uint8_t escolhido;
-uint8_t escolhido2;
 uint8_t protocolo;
 uint8_t codigo;
 uint8_t condicao_inicial;
 #define ldr 1 // A1
+
+// game 4
+uint8_t escolhido2;
+bool PodeTocarDenovo = true;
+uint8_t digito = 0;
 
 // Keypad 4x3 conectado ao PCF8574T via I2C
 #define PCF 0x27
@@ -133,16 +137,19 @@ uint8_t erros = 0;
 #define led_4 11
 
 //sequências
-const uint8_t sequencia1[] = {led_1, led_2, led_3, led_4};
-const uint8_t sequencia2[] = {led_4, led_3, led_2, led_1};
-const uint8_t sequencia3[] = {led_1, led_3, led_2, led_4};
-const uint8_t sequencia4[] = {led_3, led_2, led_4, led_1};
+const uint8_t sequencias[4][4] = {
+  {led_1, led_2, led_3, led_4},
+  {led_4, led_3, led_2, led_1},
+  {led_1, led_3, led_2, led_4},
+  {led_3, led_2, led_4, led_1}
+};
 
 // códigos p/ cada sequência.
-const char codigo_seq1[] = {'1','2','3','4'};
-const char codigo_seq2[] = {'4','3','2','1'};
-const char codigo_seq3[] = {'4','4','3','4'};
-const char codigo_seq4[] = {'1','2','2','1'};
+const char codigo_sequencias[4][4] = {
+  {'1','2','3','4'}, // seq1
+  {'4','3','2','1'}, // seq2
+  {'1','3','2','4'}, // seq3
+  {'3','2','4','1'}};// seq4
  
 
 void Sequencia (const uint8_t seq[], uint8_t passos) {
@@ -159,20 +166,7 @@ void Sequencia (const uint8_t seq[], uint8_t passos) {
 }
 
 void TocaSequencia () {
-  switch (escolhido2) {
-      case 4:
-        Sequencia (sequencia1, 4);
-        break;
-      case 5:
-        Sequencia (sequencia2, 4);
-        break;
-      case 6:
-        Sequencia (sequencia3, 4);
-        break;
-      case 7:
-        Sequencia (sequencia4, 4);
-        break;
-      }
+  Sequencia(sequencias[escolhido2], 4);
 }
 
 // Leitura de um canal analogico, material da prof
@@ -282,7 +276,7 @@ void setup()
   Serial.print("Condicao inicial sorteada: ");
   Serial.println(condicao_inicial);
 
-  escolhido2 = random(4, 8);
+  escolhido2 = random(0, 4);
   Serial.print("Sequencia sorteada: ");
   Serial.println(escolhido2);
 
@@ -624,22 +618,45 @@ void loop()
   tempo_restante = tempo_limite - segundos;
   delay(5000);
 */
-  // game 4
-  TocaSequencia(); // toca a seq. 1 vez
-  while(1) {
+// game 4
+TocaSequencia(); // toca a seq. 1 vez
+while(1) 
+{
     if (erros >= 3 || flag_480s) {
     gameover();
     }
     char tecla = lerTeclaNova();
-    bool PodeTocarDenovo = true;
 
-    if (tecla != '\0') {
-      if (tecla != '*') {
-        if (PodeTocarDenovo) {
+    if (tecla != '\0') 
+    {
+      if (tecla == '*') 
+      {
+        if (PodeTocarDenovo) 
+        {
           TocaSequencia();
           PodeTocarDenovo = false;
         }
       }
+      
+      else if (digito < 4)
+      {
+        if (tecla == codigo_sequencias[escolhido2][digito])
+        {
+          Serial.println("Digito Correto");
+          digito++;
+        }
+        else
+        {
+          Serial.println("Digito Incorreto");
+          erros++;
+          Serial.println(erros);
+        }
+      }
+    }
+    if (digito >= 4)
+    {
+      Serial.println("Sequência correta. Jogo Encerrado");
+      break;
     }
   }
 }
