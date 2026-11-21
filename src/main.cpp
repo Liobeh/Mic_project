@@ -504,86 +504,86 @@ void loop()
 
   // jogo 1
 
-  // while (1)
-  // {
-  //   atualizarTempo(); // calcula tempo restante
+  while (1)
+  {
+    atualizarTempo(); // calcula tempo restante
 
-  //   // os switches disponiveis sao os switches 1 a 4
+    // os switches disponiveis sao os switches 1 a 4
 
-  //   // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
-  //   // o jogador com o manual deve descobrir qual eh o switch correto para ligar
-  //   // o jogador com a bomba liga o switch e aperta um botao de confirmacao
+    // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
+    // o jogador com o manual deve descobrir qual eh o switch correto para ligar
+    // o jogador com a bomba liga o switch e aperta um botao de confirmacao
 
-  //   // display
+    // display
 
-  //   display.clearDisplay();
-  //   atualizarOLED();
+    display.clearDisplay();
+    atualizarOLED();
 
-  //   display.setTextSize(1);
-  //   display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
 
-  //   display.setCursor(0, 20);
+    display.setCursor(0, 20);
 
-  //   // escolhe um códgio diferente p/ cada switch
-  //   switch (escolhido)
-  //   {
-  //   case 4:
-  //     display.println(F("KEY-8B52-O1"));
-  //     break;
-  //   case 5:
-  //     display.println(F("KEY-BB52-01"));
-  //     break;
-  //   case 6:
-  //     display.println(F("KEY-8B5Z-0l"));
-  //     break;
-  //   case 7:
-  //     display.println(F("KEY-B8SZ-Ol"));
-  //     break;
-  //   }
+    // escolhe um códgio diferente p/ cada switch
+    switch (escolhido)
+    {
+    case 4:
+      display.println(F("KEY-8B52-O1"));
+      break;
+    case 5:
+      display.println(F("KEY-BB52-01"));
+      break;
+    case 6:
+      display.println(F("KEY-8B5Z-0l"));
+      break;
+    case 7:
+      display.println(F("KEY-B8SZ-Ol"));
+      break;
+    }
 
-  //   display.display();
+    display.display();
 
-  //   if (flag_botao)
-  //   {
-  //     flag_botao = false;
+    if (flag_botao)
+    {
+      flag_botao = false;
 
-  //     Serial.println("BOTAO PRESSIONADO!");
+      Serial.println("BOTAO PRESSIONADO!");
 
-  //     // IA
+      // IA
 
-  //     // Identifica o bit correspondente ao switch sorteado
-  //     uint8_t mascara = (1 << escolhido);
+      // Identifica o bit correspondente ao switch sorteado
+      uint8_t mascara = (1 << escolhido);
 
-  //     // Define a combinação correta dos quatro switches
-  //     uint8_t esperado = 0b11110000 & ~mascara;
+      // Define a combinação correta dos quatro switches
+      uint8_t esperado = 0b11110000 & ~mascara;
 
-  //     // Verifica se somente o switch sorteado está ligado
-  //     if ((PIND & 0b11110000) == esperado)
-  //     {
-  //       Serial.println("SWITCH CORRETO!");
-  //       break;
-  //     }
+      // Verifica se somente o switch sorteado está ligado
+      if ((PIND & 0b11110000) == esperado)
+      {
+        Serial.println("SWITCH CORRETO!");
+        break;
+      }
 
-  //     else
-  //     {
-  //       registrarErros();
-  //       Serial.println(erros);
-  //     }
-  //   }
+      else
+      {
+        registrarErros();
+        Serial.println(erros);
+      }
+    }
 
-  //   // precisamos manter a checagem da interrupcao e dos erros
+    // precisamos manter a checagem da interrupcao e dos erros
 
-  //   if (erros >= 3)
-  //   {
-  //     gameover();
-  //   }
+    if (erros >= 3)
+    {
+      gameover();
+    }
 
-  //   if (flag_480s)
-  //   {
-  //     gameover();
-  //     flag_480s = false;
-  //   }
-  // }
+    if (flag_480s)
+    {
+      gameover();
+      flag_480s = false;
+    }
+  }
 
   // Fase 3 - Protocolo de Emergencia
 
@@ -835,75 +835,75 @@ void loop()
       seq4: 778462
   */
 
-//   display.clearDisplay();
+  display.clearDisplay();
 
-//   display.setTextSize(1);
-//   display.setTextColor(SSD1306_WHITE);
-//   display.setCursor(0, 20);
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(0, 20);
 
-//   display.println(F("*: tocar novamente")); //testar como fica no display
-//   display.display();
-//   TocaSequencia(); // toca a seq. 1 vez
+  display.println(F("*: tocar novamente")); //testar como fica no display
+  display.display();
+  TocaSequencia(); // toca a seq. 1 vez
 
-//   while(1) 
-//   {
-//     if (erros >= 3 || flag_480s) {
-//     gameover();
-//     }
-//     char tecla = lerTeclaNova();
+  while(1) 
+  {
+    if (erros >= 3 || flag_480s) {
+    gameover();
+    }
+    char tecla = lerTeclaNova();
 
-//     if (tecla != '\0') 
-//     {
-//       if (tecla == '*') 
-//       {
-//         if (PodeTocarDenovo) 
-//         {
-//           TocaSequencia();
-//           PodeTocarDenovo = false;
-//           display.println(F("Replay usado")); //testar como fica no display
-//           display.display();
-//           Serial.println(F("Replay usado"));
-//         }
-//       }
-//       else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
-//       {
-//         digito = 0;
-//         Serial.println(F("Entrada limpa"));
-//       }
+    if (tecla != '\0') 
+    {
+      if (tecla == '*') 
+      {
+        if (PodeTocarDenovo) 
+        {
+          TocaSequencia();
+          PodeTocarDenovo = false;
+          display.println(F("Replay usado")); //testar como fica no display
+          display.display();
+          Serial.println(F("Replay usado"));
+        }
+      }
+      else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
+      {
+        digito = 0;
+        Serial.println(F("Entrada limpa"));
+      }
 
-//       else if (digito < 6)
-//       {
-//         tentativa[digito] = tecla;
-//         digito++;
-//         Serial.print(F("Digitado: "));
-//         Serial.println(tecla);
-//         }
-//     }
-//     if (digito >= 6)
-//       {
-//         bool correto = true;
-//         for (uint8_t i = 0; i < 6; i++)
-//         {
-//           if (tentativa[i] != codigo_sequencias[escolhido2][i])
-//           {
-//             correto = false;
-//             break;
-//           }
-//         }
-//         if (correto)
-//         {
-//           Serial.println(F("Sequencia correta. Jogo Encerrado")); // 
-//           break;
-//         }
-//         else
-//         {
-//           Serial.println(F("Codigo Incorreto"));
-//           registrarErros();
-//           Serial.println(erros);
-//           digito = 0;
-//         }
-//       }
-//   }
-//   while (1){} // pausa o jogo pra ele não resetar automaticamente
-// }
+      else if (digito < 6)
+      {
+        tentativa[digito] = tecla;
+        digito++;
+        Serial.print(F("Digitado: "));
+        Serial.println(tecla);
+        }
+    }
+    if (digito >= 6)
+      {
+        bool correto = true;
+        for (uint8_t i = 0; i < 6; i++)
+        {
+          if (tentativa[i] != codigo_sequencias[escolhido2][i])
+          {
+            correto = false;
+            break;
+          }
+        }
+        if (correto)
+        {
+          Serial.println(F("Sequencia correta. Jogo Encerrado")); // 
+          break;
+        }
+        else
+        {
+          Serial.println(F("Codigo Incorreto"));
+          registrarErros();
+          Serial.println(erros);
+          digito = 0;
+        }
+      }
+  }
+  while (1){} // pausa o jogo pra ele não resetar automaticamente
+}
 }
