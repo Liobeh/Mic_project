@@ -173,10 +173,10 @@ uint8_t erros = 0;
 #define chave_7 7
 #define botao 3
 
-#define led_1 8
-#define led_2 9
-#define led_3 10
-#define led_4 11
+#define led_1 PB0 // D8
+#define led_2 PB1 // D9
+#define led_3 PB2 // D10
+#define led_4 PB3 // D11
 
 //sequências
 const uint8_t sequencias[4][4] = {
@@ -194,15 +194,14 @@ const char codigo_sequencias[4][6] = {
   {'7','7','8','4','6','2'}};// seq4
  
 
-void Sequencia (const uint8_t seq[], uint8_t passos) {
-  /* acende e desliga LEDs na ordem da lista
-  */
+void Sequencia(const uint8_t seq[], uint8_t passos) {
+  /* acende e desliga LEDs na ordem da lista */
   for (uint8_t i = 0; i < passos; i++) {
     uint8_t atual = seq[i];
 
-    digitalWrite(atual, HIGH);
+    PORTB |= (1 << atual);  // substitui digitalWrite(atual, HIGH)
     delay(500);
-    digitalWrite(atual, LOW);
+    PORTB &= ~(1 << atual); // substitui digitalWrite(atual, LOW)
     delay(200);
   }
 }
@@ -297,10 +296,8 @@ void setup()
 
   // config pinos para a fase1
 
-  pinMode(led_1, OUTPUT); //config dos LEDs
-  pinMode(led_2, OUTPUT); // trocar função por registradores
-  pinMode(led_3, OUTPUT); // (que nem no codigo em baixo)
-  pinMode(led_4, OUTPUT); 
+  DDRB |= (1 << led_1) | (1 << led_2) | (1 << led_3) | (1 << led_4); // config dos LEDs
+  PORTB &= ~((1 << led_1) | (1 << led_2) | (1 << led_3) | (1 << led_4));
   
   DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)); // config dos switches
   PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
