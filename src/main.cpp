@@ -280,7 +280,7 @@ bool fase2_concluida = false;
 bool fase2_falhou = false;
 unsigned long tempo_segurar = 1500; // tempo que o jogador deve segurarar o potenciometro na posição para validar a resposta
 unsigned long momento_chegada[2] = {0, 0};
-unsigned long tempolimite_fase_2 = 10000; // ideal 1 minuto 60000 ms
+unsigned long tempolimite_fase_2 = 60000; // ideal 1 minuto 60000 ms
 unsigned long momento_inicio = 0;
 
 //=================================
@@ -419,7 +419,7 @@ void resposta_potenciometros()
 
     posicao_confirmada = confirmar_posicao(indice); // verificar se o jogador está esperando o tempo_segurar
 
-    if (contador_de_giros[indice] == 3) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
+    if (contador_de_giros[indice] >= 3) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
     {
       posicao_confirmada = min_max_3x;
     }
