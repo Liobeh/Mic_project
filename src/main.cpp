@@ -168,13 +168,6 @@ char lerTeclaNova()
   return resultado;
 }
 
-// erros
-uint8_t erros = 0;
-
-void registrarErros(){
-  erros++;
-}
-
 // fase1
 //  Setup dos pinos
 #define chave_4 4
@@ -355,6 +348,13 @@ void atualizarBuzzer(bool jogo_ativo, uint16_t tempo_restante)
   }
 }
 // -------- fim config buzzer -------
+// erros
+uint8_t erros = 0;
+
+void registrarErros(){
+  erros++;
+  tocarSom(erro);
+}
 
 //sequências
 const uint8_t sequencias[4][4] = {
@@ -397,6 +397,7 @@ ISR(INT1_vect)
 ISR(TIMER1_COMPA_vect)
 {
   ms++;
+  buzzerTick();
 }
 
 ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
@@ -440,6 +441,7 @@ void atualizarTempo()
   {
     tempo_restante = tempo_limite - tempo_consumido;
   }
+  atualizarBuzzer(true, tempo_restante);
 }
 
 // Display
@@ -697,8 +699,11 @@ void gameover()
 
   Serial.println("Game Over");
 
+  tocarSom(Game_Over);
+
   while (1)
   {
+    atualizarBuzzer(false, 0);
   }
 }
 
