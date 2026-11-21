@@ -96,13 +96,25 @@ char lerTeclado()
 char lerTeclaNova()
 {
     static char anterior = '\0';
+    static uint32_t ultimoTempo = 0;
+
+    if (meu_millis() - ultimoTempo < 40) // debouncing do keypad
+    {
+      return '\0';
+    }
 
     char atual = lerTeclado();
     char resultado = '\0';
 
-    if (atual != '\0' && anterior == '\0')
+    if (atual != '\0' && anterior == '\0') // quando aperta a tecla
     {
         resultado = atual;
+        ultimoTempo = meu_millis();
+    }
+
+    else if (atual == '\0' && anterior != '\0') // quando solta a tecla
+    {
+      ultimoTempo = meu_millis();
     }
 
     anterior = atual;
@@ -663,6 +675,7 @@ void loop()
           TocaSequencia();
           PodeTocarDenovo = false;
           display.println(F("Replay usado")); //testar como fica no display
+          display.display();
           Serial.println("Replay usado");
         }
       }
