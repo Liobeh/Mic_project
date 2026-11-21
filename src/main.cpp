@@ -7,6 +7,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define set_bit(reg, bit) ((reg) |= (1 << (bit)))   // coloca o bit em 1
+#define clr_bit(reg, bit) ((reg) &= ~(1 << (bit)))  // coloca o bit em 0
+#define cpl_bit(reg, bit) ((reg) ^= (1 << (bit)))   // inverte o bit
+#define tst_bit(reg, bit) ((reg) & (1 << (bit)))    // testa o estado do bit
+
 // Dimensões da tela
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -68,10 +73,10 @@ uint16_t meu_analogRead(uint8_t canal)
   ADMUX = (1 << REFS0) | canal;
 
   // Inicia a conversao
-  ADCSRA |= (1 << ADSC);
+  set_bit(ADCSRA, ADSC);
 
   // Espera a conversao terminar
-  while (ADCSRA & (1 << ADSC))
+  while (tst_bit(ADCSRA, ADSC))
     ;
 
   // Retorna o resultado
@@ -113,7 +118,7 @@ char lerTeclado()
   {
     byte estado = 0xFF;
 
-    estado &= ~(1 << pinosLinhas[i]);
+    clr_bit(estado, pinosLinhas[i]);
 
     escreverPCF(estado);
     delayMicroseconds(100);
@@ -122,7 +127,7 @@ char lerTeclado()
 
     for (int j = 0; j < 3; j++)
     {
-      if (!(leitura & (1 << pinosColunas[j])))
+      if (!tst_bit(leitura, pinosColunas[j]))
       {
         escreverPCF(0xFF);
         return teclas[i][j];
@@ -204,9 +209,9 @@ void Sequencia(const uint8_t seq[], uint8_t passos) {
   for (uint8_t i = 0; i < passos; i++) {
     uint8_t atual = seq[i];
 
-    PORTB |= (1 << atual);  // substitui digitalWrite(atual, HIGH)
+    set_bit(PORTB, atual);
     delay(500);
-    PORTB &= ~(1 << atual); // substitui digitalWrite(atual, LOW)
+    clr_bit(PORTB, atual);
     delay(200);
   }
 }
@@ -451,11 +456,16 @@ void setup()
 
   // config pinos para a fase1
 
-  DDRB |= (1 << led_1) | (1 << led_2) | (1 << led_3) | (1 << led_4); // config dos LEDs
-  PORTB &= ~((1 << led_1) | (1 << led_2) | (1 << led_3) | (1 << led_4));
-  
-  DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)); // config dos switches
-  PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
+  set_bit(DDRB, led_1);   clr_bit(PORTB, led_1);   // Config leds (PB0 até PB3)
+  set_bit(DDRB, led_2);   clr_bit(PORTB, led_2);
+  set_bit(DDRB, led_3);   clr_bit(PORTB, led_3);
+  set_bit(DDRB, led_4);   clr_bit(PORTB, led_4);
+
+  clr_bit(DDRD, botao);   set_bit(PORTD, botao);  //config botão e switches (PD3 até PD7)
+  clr_bit(DDRD, chave_4); set_bit(PORTD, chave_4);
+  clr_bit(DDRD, chave_5); set_bit(PORTD, chave_5);
+  clr_bit(DDRD, chave_6); set_bit(PORTD, chave_6);
+  clr_bit(DDRD, chave_7); set_bit(PORTD, chave_7);
 
   // setup registradores principais
   cli();
@@ -573,15 +583,9 @@ void loop()
 
       Serial.println("BOTAO PRESSIONADO!");
 
-      // IA
+      uint8_t esperado = 0b11110000;
+      clr_bit(esperado, escolhido);
 
-      // Identifica o bit correspondente ao switch sorteado
-      uint8_t mascara = (1 << escolhido);
-
-      // Define a combinação correta dos quatro switches
-      uint8_t esperado = 0b11110000 & ~mascara;
-
-      // Verifica se somente o switch sorteado está ligado
       if ((PIND & 0b11110000) == esperado)
       {
         Serial.println("SWITCH CORRETO!");
