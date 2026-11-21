@@ -34,6 +34,7 @@ bool estadoAcao3;
 uint8_t escolhido;
 uint8_t protocolo;
 uint8_t codigo;
+uint8_t numeroEsperado3 = 0;
 uint8_t condicao_inicial;
 #define ldr 1 // A1
 
@@ -208,7 +209,7 @@ void registrarErros()
 #define led_1 PB0 // D8
 #define led_2 PB1 // D9
 #define led_3 PB2 // D10
-#define led_4 PB3 // D11
+#define led_4 PB4 // D12
 
 // sequências
 const uint8_t sequencias[4][4] = {
@@ -224,224 +225,216 @@ const char codigo_sequencias[4][6] = {
     {'7', '1', '3', '8', '9', '2'},  // seq3
     {'7', '7', '8', '4', '6', '2'}}; // seq4
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-// Definição de variaveis globais fase2 ADC 
+// Definição de variaveis globais fase2 ADC
 //================================
-//definindo componentes
-int LeD_amarelo     = 11;
-int LeD_azul        = 10;
-int LeD_verde       = 12;
+// definindo componentes
+int LeD_amarelo = 9;
+int LeD_azul = 10;
+int LeD_verde = 12;
 int Potenciometro_1 = A2;
 int Potenciometro_2 = A3;
-int buzzer          =  9;
+int buzzer = 11;
+
+bool fase2Iniciada = false;
 
 // Parte dos leds
 const int piscando = 2; // condição de quando o led pisca
 const int aceso = HIGH;
 const int apagado = LOW;
-const int condicao_leds[4][3] = {        // uma lista de tuplas com as diferentes configurações de leds acesos
-  // amarelo, azul, verde
-  {aceso, aceso, apagado},
-  {apagado, apagado, piscando},
-  {piscando, piscando, piscando},
-  {apagado, piscando, aceso},
-  };
+const int condicao_leds[4][3] = {
+    // uma lista de tuplas com as diferentes configurações de leds acesos
+    // amarelo, azul, verde
+    {aceso, aceso, apagado},
+    {apagado, apagado, piscando},
+    {piscando, piscando, piscando},
+    {apagado, piscando, aceso},
+};
 int configuracao_led_anterior = -1;
-int conf_amarelo = -2; // a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
-int conf_azul = -4;
-int conf_verde = -3;
 int pisca = HIGH;
-int vetor_Leds[3] = {LeD_amarelo , LeD_azul, LeD_verde};
+int vetor_Leds[3] = {PB1, PB2, PB4}; // amarelo, azul, verde
 unsigned long tempo_pisca = 300;
 unsigned long ultima_troca = 0;
 
 // Parte dos potenciometros
-  const int min_max_3x= -15; 
-  const int nada = -20;
-  const int meio = -11;   // 341<= meio <=682
-  const int minimo = -9;  // 0<= minimo <=341
-  const int maximo = -16; // 682<= maximo <=1023
-  const int nenhuma = -1;
-  const int tabela_resposta_pot[4][2]={ // tabela de respostas com potenciometros para cada configuração de leds 
+const int min_max_3x = -15;
+const int nada = -20;
+const int meio = -11;   // 341<= meio <=682
+const int minimo = -9;  // 0<= minimo <=341
+const int maximo = -16; // 682<= maximo <=1023
+const int nenhuma = -1;
+const int tabela_resposta_pot[4][2] = {
+    // tabela de respostas com potenciometros para cada configuração de leds
     // pot1      pot2
-    {min_max_3x,   nada},
-    {nada,         meio},
-    {minimo,     minimo},
+    {min_max_3x, nada},
+    {nada, meio},
+    {minimo, minimo},
     {maximo, min_max_3x},
-  };
-  int pot_valor_lido[2] = {0,0};
-  int posicao_pot_lida[2] = {0,0};
-  int contador_de_giros[2] = {0,0};
-  int posicao_anterior[2] = {nenhuma, nenhuma};
-  int vetor_pot[2]= {Potenciometro_1,Potenciometro_2};
-  bool passou_pelo_minimo[2]= {0,0};
-  bool fase2_concluida = false;
-  bool fase2_falhou = false;
-  unsigned long tempo_segurar = 1500; // tempo que o jogador deve segurarar o potenciometro na posição para validar a resposta
-  unsigned long momento_chegada[2] = {0,0};
-  unsigned long tempolimite_fase_2 = 10000; // ideal 1 minuto 60000 ms
-  unsigned long momento_inicio = 0;
+};
+int pot_valor_lido[2] = {0, 0};
+int posicao_pot_lida[2] = {0, 0};
+int contador_de_giros[2] = {0, 0};
+int posicao_anterior[2] = {nenhuma, nenhuma};
+int vetor_pot[2] = {2, 3};
+bool passou_pelo_minimo[2] = {0, 0};
+bool fase2_concluida = false;
+bool fase2_falhou = false;
+unsigned long tempo_segurar = 1500; // tempo que o jogador deve segurarar o potenciometro na posição para validar a resposta
+unsigned long momento_chegada[2] = {0, 0};
+unsigned long tempolimite_fase_2 = 10000; // ideal 1 minuto 60000 ms
+unsigned long momento_inicio = 0;
 
 //=================================
 
-
-
-
 // Funções da fase2 ADC
 //=================================================================================================================================================================================
-void acender_leds() //void acender_leds(): 
-  {
-  int configuracao_led_escolhida = random(0,4);   // um gerador pseudoaletório o qual indica uma das configurações para acender
+void acender_leds() // void acender_leds():
+{
+  int configuracao_led_escolhida = random(0, 4); // um gerador pseudoaletório o qual indica uma das configurações para acender
   while (configuracao_led_escolhida == configuracao_led_anterior)
   {
-    configuracao_led_escolhida = random(0,4);
+    configuracao_led_escolhida = random(0, 4);
   }
-  configuracao_led_anterior = configuracao_led_escolhida;  
-// a função deve ativar aleatoriamente um dos padrões pré existentes para o led acender
-  conf_amarelo = condicao_leds[configuracao_led_escolhida][0]; 
-  conf_azul    = condicao_leds[configuracao_led_escolhida][1];
-  conf_verde   = condicao_leds[configuracao_led_escolhida][2];
+  configuracao_led_anterior = configuracao_led_escolhida;
 
-  digitalWrite(LeD_amarelo,conf_amarelo);  // configuração do led amarelo:
-  digitalWrite(LeD_azul,conf_azul);  // e configuração do led azul:
-  digitalWrite(LeD_verde,conf_verde);  // configuração do led verde: 
-  momento_inicio = millis();
-  }
-
-  void pisca_led()
+  for (int led = 0; led < 3; led++) // o laço itera de 0 a 2 para abranger os 3 leds
   {
-  if ((millis() - ultima_troca) >= tempo_pisca)
+    // configuração do led amarelo: e configuração do led azul: configuração do led verde:
+    if (condicao_leds[configuracao_led_escolhida][led] == apagado)
     {
-    pisca = !pisca;// inverte o sentido de pisca
-    ultima_troca = millis();
+      PORTB &= ~(1 << vetor_Leds[led]);
     }
-      
-  for (int i = 0; i < 3; i++) 
+    else // como aceso e piscando começam com o led aceso basta colocar um else após verificar que a condição não é apagado
     {
-    if (condicao_leds[configuracao_led_anterior][i] == piscando) 
-      {
-        digitalWrite(vetor_Leds[i], pisca);
-
+      PORTB |= (1 << vetor_Leds[led]);
     }
   }
-  } 
+  momento_inicio = meu_millis();
+}
 
-//Funções de resposta dos potenciometros
+void pisca_led()
+{
+  if ((meu_millis() - ultima_troca) >= tempo_pisca)
+  {
+    pisca = !pisca; // inverte o sentido de pisca
+    ultima_troca = meu_millis();
+  }
+
+  for (int led = 0; led < 3; led++)
+  {
+    if (condicao_leds[configuracao_led_anterior][led] == piscando)
+    {
+      if (pisca == HIGH)
+      {
+        PORTB |= (1 << vetor_Leds[led]);
+      }
+      else
+      {
+        PORTB &= ~(1 << vetor_Leds[led]);
+      }
+    }
+  }
+}
+
+// Funções de resposta dos potenciometros
 int converter_posicao(int leitura_pot)
 {
 
-  if (leitura_pot <= 341)// condiconal de leitura de cada potenciometro,
+  if (leitura_pot <= 341) // condiconal de leitura de cada potenciometro,
   {
-      return minimo;
-  } 
-  else if (leitura_pot <= 682)// condicional de leitura de cada potenciometro,
+    return minimo;
+  }
+  else if (leitura_pot <= 682) // condicional de leitura de cada potenciometro,
   {
-      return meio;
-  } 
-  else// condicional de leitura de cada potenciometro,
+    return meio;
+  }
+  else // condicional de leitura de cada potenciometro,
   {
-      return maximo;
+    return maximo;
   }
 }
 
-
-
-
-
-
-int confirmar_posicao (int indice_pot)          // indice_pot = 0 ou = 1
+int confirmar_posicao(int indice_pot)
 {
-if (posicao_pot_lida[indice_pot] != posicao_anterior[indice_pot])       // mudou de posição
-  {          
-    if (posicao_anterior[indice_pot] != nenhuma)              // não é a primeira leitura
-    {           
-        momento_chegada[indice_pot] = millis();            // chegou: começa a contar
-    
-    }
+  // Verifica se o potenciometro mudou de posicao
+  if (posicao_pot_lida[indice_pot] != posicao_anterior[indice_pot])
+  {
     posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
+    momento_chegada[indice_pot] = meu_millis();
   }
-if (momento_chegada[indice_pot] != 0 && millis() - momento_chegada[indice_pot] >= tempo_segurar)
-{
-    return posicao_pot_lida[indice_pot];
-}
-else{
-    return nenhuma;
-}
-}
 
-
-
-
-
-  void resposta_potenciometros()  
-{
-
-int posicao_confirmada = 0;
-
-if (fase2_concluida || fase2_falhou) // já terminou?
+  // Verifica se permaneceu na posicao pelo tempo necessario
+  if (meu_millis() - momento_chegada[indice_pot] >= tempo_segurar)
   {
-    return;//sai da função
+    return posicao_pot_lida[indice_pot];
   }
 
-if (millis() - momento_inicio >= tempolimite_fase_2) // tempo esgotado?
+  return nenhuma;
+}
+
+void resposta_potenciometros()
+{
+
+  int posicao_confirmada = 0;
+
+  if (fase2_concluida || fase2_falhou) // já terminou?
+  {
+    return; // sai da função
+  }
+
+  if (meu_millis() - momento_inicio >= tempolimite_fase_2) // tempo esgotado?
   {
     fase2_falhou = true;
-    erros ++;                                 // conta um erro para a
+    registrarErros(); // conta um erro para a
     return;
   }
 
-
-
-bool certo[2] = {false, false};                 // um por potenciômetro
-for (int indice = 0; indice < 2; indice++)
-{
-  pot_valor_lido[indice] = analogRead(vetor_pot[indice]);
-
-  if (pot_valor_lido[indice] <= 341)// condiconal de leitura de cada potenciometro,
+  bool certo[2] = {false, false}; // um por potenciômetro
+  for (int indice = 0; indice < 2; indice++)
   {
-      posicao_pot_lida[indice]= minimo;
-  } 
-  else if (pot_valor_lido[indice] <= 682)// condicional de leitura de cada potenciometro,
-  {
+    pot_valor_lido[indice] = meu_analogRead(vetor_pot[indice]);
+
+    if (pot_valor_lido[indice] <= 341) // condiconal de leitura de cada potenciometro,
+    {
+      posicao_pot_lida[indice] = minimo;
+    }
+    else if (pot_valor_lido[indice] <= 682) // condicional de leitura de cada potenciometro,
+    {
       posicao_pot_lida[indice] = meio;
-  } 
-  else// condicional de leitura de cada potenciometro,
-  {
+    }
+    else // condicional de leitura de cada potenciometro,
+    {
       posicao_pot_lida[indice] = maximo;
-  }
+    }
 
-  if (posicao_pot_lida[indice] == minimo)
-  {
-    passou_pelo_minimo[indice] = true;
-  }
+    if (posicao_pot_lida[indice] == minimo)
+    {
+      passou_pelo_minimo[indice] = true;
+    }
 
-  if (posicao_pot_lida[indice] == maximo && passou_pelo_minimo[indice])
-  {
-    contador_de_giros[indice] ++;
-    passou_pelo_minimo[indice] = false;
-  }
+    if (posicao_pot_lida[indice] == maximo && passou_pelo_minimo[indice])
+    {
+      contador_de_giros[indice]++;
+      passou_pelo_minimo[indice] = false;
+    }
 
-  posicao_confirmada = confirmar_posicao (indice); // verificar se o jogador está esperando o tempo_segurar 
+    posicao_confirmada = confirmar_posicao(indice); // verificar se o jogador está esperando o tempo_segurar
 
-  if (contador_de_giros[indice] == 3 ) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
-  {
+    if (contador_de_giros[indice] == 3) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
+    {
       posicao_confirmada = min_max_3x;
-  }
+    }
 
-  if (posicao_confirmada == tabela_resposta_pot[configuracao_led_anterior][indice] || tabela_resposta_pot[configuracao_led_anterior][indice] == nada)// condicional para quando a posição do potenciometro é igual a da tabela ou quando a resposta é não fazer nada
+    if (posicao_confirmada == tabela_resposta_pot[configuracao_led_anterior][indice] || tabela_resposta_pot[configuracao_led_anterior][indice] == nada) // condicional para quando a posição do potenciometro é igual a da tabela ou quando a resposta é não fazer nada
+    {
+      certo[indice] = true;
+    }
+  }
+  if (certo[0] && certo[1])
   {
-    certo[indice] = true;
+    fase2_concluida = true;
   }
-  }
-  if(certo[0] && certo[1])
-  {
-    fase2_concluida =true;
-  }
-  Serial.println(posicao_confirmada); // verificação do valor de posicao_confirmada para teste, deve retornar -1
+  // Serial.println(posicao_confirmada); // verificação do valor de posicao_confirmada para teste, deve retornar -1
 }
-
 
 void nova_tentativa_fase_2()
 {
@@ -455,38 +448,11 @@ void nova_tentativa_fase_2()
   posicao_anterior[1] = nenhuma;
   momento_chegada[0] = 0;
   momento_chegada[1] = 0;
-  acender_leds(); // chama acender_leds para a nova tentativa ter outro padrão de leds 
+  pisca = HIGH;
+  ultima_troca = meu_millis();
+  acender_leds(); // chama acender_leds para a nova tentativa ter outro padrão de leds
 }
 //============================================================================================================================================================================
-
-void Sequencia (const uint8_t seq[], uint8_t passos) {
-  /* acende e desliga LEDs na ordem da lista
-  */
-=======
-void Sequencia(const uint8_t seq[], uint8_t passos) {
-  /* acende e desliga LEDs na ordem da lista */
->>>>>>> origin/main
-  for (uint8_t i = 0; i < passos; i++) {
-=======
-void Sequencia(const uint8_t seq[], uint8_t passos)
-{
-  /* acende e desliga LEDs na ordem da lista */
-  for (uint8_t i = 0; i < passos; i++)
-  {
->>>>>>> origin/main
-    uint8_t atual = seq[i];
-
-    set_bit(PORTB, atual);
-    delay(500);
-    clr_bit(PORTB, atual);
-    delay(200);
-  }
-}
-
-void TocaSequencia()
-{
-  Sequencia(sequencias[escolhido2], 4);
-}
 
 // rotina de interrupcao do botao
 ISR(INT1_vect)
@@ -562,6 +528,18 @@ void reiniciarJogo()
   tempo_restante = tempo_limite;
   erros = 0;
 
+  // Reinicia a fase 2
+  fase2Iniciada = false;
+  fase2_concluida = false;
+  fase2_falhou = false;
+
+  configuracao_led_anterior = -1;
+  pisca = HIGH;
+  ultima_troca = 0;
+
+  // Desliga o LED verde da fase 2
+  clr_bit(PORTB, PB4);
+
   // Reinicia a fase 3
   jogo3_iniciado = false;
   acao_atual = 0;
@@ -635,6 +613,74 @@ void atualizarOLED()
   display.print(erros);
 
   display.drawLine(0, 12, 127, 12, SSD1306_WHITE);
+}
+
+void mostrarFase1()
+{
+  static uint32_t ultimaAtualizacao = 0;
+
+  uint32_t agora = meu_millis();
+
+  if (agora - ultimaAtualizacao < 200)
+  {
+    return;
+  }
+
+  ultimaAtualizacao = agora;
+
+  display.clearDisplay();
+  atualizarOLED();
+
+  display.setCursor(0, 20);
+
+  switch (escolhido)
+  {
+  case 4:
+    display.println(F("KEY-8B52-O1"));
+    break;
+
+  case 5:
+    display.println(F("KEY-BB52-01"));
+    break;
+
+  case 6:
+    display.println(F("KEY-8B5Z-0l"));
+    break;
+
+  case 7:
+    display.println(F("KEY-B8SZ-Ol"));
+    break;
+  }
+
+  display.display();
+}
+
+void mostrarFase2()
+{
+  static uint32_t ultimaAtualizacao = 0;
+
+  uint32_t agora = meu_millis();
+
+  if (agora - ultimaAtualizacao < 250)
+  {
+    return;
+  }
+
+  ultimaAtualizacao = agora;
+
+  display.clearDisplay();
+  atualizarOLED();
+
+  display.setCursor(40, 20);
+  display.println(F("FASE 2"));
+
+  display.setCursor(16, 35);
+  display.println(F("Ajuste os"));
+
+  display.setCursor(16, 45);
+  display.println(F("potenciometros"));
+
+  display.display();
 }
 
 void mostrarFase3()
@@ -741,19 +787,6 @@ void setup()
   Wire.begin();
   escreverPCF(0xFF);
 
-
-  // configuração de pinos da Fase 2 
-  //====================================================
-  // analogRead(A0) é a semente de aleatoriedade 
-  pinMode(LeD_azul, OUTPUT);
-  pinMode(LeD_amarelo, OUTPUT);
-  pinMode(LeD_verde, OUTPUT);
-  pinMode(Potenciometro_1, INPUT);
-  pinMode(Potenciometro_2 , INPUT);// Declarar os três leds como saída e o botão como entrada
-  pinMode(buzzer, OUTPUT);
-
-  //====================================================
-  randomSeed(analogRead(0));
   // ---------- inicialização da tela ------------
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   {
@@ -814,6 +847,14 @@ void setup()
   set_bit(DDRB, led_4);
   clr_bit(PORTB, led_4);
 
+  // LED verde da fase 2 - D12 (PB4)
+  set_bit(DDRB, PB4);
+  clr_bit(PORTB, PB4);
+
+  // Buzzer - D11 (PB3)
+  set_bit(DDRB, PB3);
+  clr_bit(PORTB, PB3);
+
   clr_bit(DDRD, botao);
   set_bit(PORTD, botao); // config botão e switches (PD3 até PD7)
   clr_bit(DDRD, chave_4);
@@ -855,85 +896,10 @@ void setup()
   sei();
 }
 
-// funcao auto-explicativa
-void gameover()
-{
-  TCCR2B = 0; // Para o timer
-
-  atualizarTempo();
-
-  display.clearDisplay();
-  atualizarOLED();
-
-  display.setCursor(0, 20);
-  display.println(F("GAME OVER"));
-
-  display.setCursor(0, 34);
-
-  if (erros >= 3)
-  {
-    display.println(F("3 erros cometidos"));
-  }
-  else if (flag_480s)
-  {
-    display.println(F("Tempo esgotado"));
-  }
-
-  display.setCursor(0, 50);
-  display.println(F("Reinicie: RESET"));
-
-  display.display();
-
-  Serial.println("Game Over");
-}
-
 void executarFase1()
 {
-  static uint32_t ultimaAtualizacao = 0;
+  mostrarFase1();
 
-  if (meu_millis() - ultimaAtualizacao >= 200)
-  {
-<<<<<<< HEAD
-    atualizarTempo(); // calcula tempo restante
-
-    
-    // os switches disponiveis sao os switches 1 a 4
-
-    // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
-    // o jogador com o manual deve descobrir qual eh o switch correto para ligar
-    // o jogador com a bomba liga o switch e aperta um botao de confirmacao
-
-    // display
-=======
-    ultimaAtualizacao = meu_millis();
->>>>>>> origin/main
-
-    display.clearDisplay();
-    atualizarOLED();
-
-    display.setCursor(0, 20);
-
-    switch (escolhido)
-    {
-    case 4:
-      display.println(F("KEY-8B52-O1"));
-      break;
-
-    case 5:
-      display.println(F("KEY-BB52-01"));
-      break;
-
-    case 6:
-      display.println(F("KEY-8B5Z-0l"));
-      break;
-
-    case 7:
-      display.println(F("KEY-B8SZ-Ol"));
-      break;
-    }
-
-    display.display();
-  }
   if (flag_botao)
   {
     flag_botao = false;
@@ -947,33 +913,7 @@ void executarFase1()
     {
       Serial.println(F("FASE 1 CONCLUIDA!"));
 
-<<<<<<< HEAD
-      Serial.println("BOTAO PRESSIONADO!");
-
-      // IA
-
-      // Identifica o bit correspondente ao switch sorteado
-      uint8_t mascara = (1 << escolhido);
-
-      // Define a combinação correta dos quatro switches
-      uint8_t esperado = 0b11110000 & ~mascara;
-
-      // Verifica se somente o switch sorteado está ligado
-      if ((PIND & 0b11110000) == esperado)
-      {
-        Serial.println("SWITCH CORRETO!");
-        break;
-      }
-
-      else
-      {
-        registrarErros();
-        Serial.println(erros);
-        tone(buzzer, 300, 300);   //botar barulho do buzer aqui: tone(pino, frequencia_Hz, duracao_ms)
-      }
-=======
       estadoAtual = FASE_2;
->>>>>>> origin/main
     }
     else
     {
@@ -986,6 +926,240 @@ void executarFase1()
   }
 }
 
+void executarFase2()
+{
+  // Inicializa a fase apenas na primeira entrada
+  if (!fase2Iniciada)
+  {
+    fase2Iniciada = true;
+
+    nova_tentativa_fase_2();
+
+    Serial.println(F("FASE 2 INICIADA!"));
+  }
+
+  // Atualiza os LEDs e verifica os potenciometros
+  pisca_led();
+  resposta_potenciometros();
+
+  // Se o jogador acertou
+  if (fase2_concluida)
+  {
+    Serial.println(F("FASE 2 CONCLUIDA!"));
+
+    // Desliga os LEDs da fase 2
+    clr_bit(PORTB, PB1);
+    clr_bit(PORTB, PB2);
+    clr_bit(PORTB, PB4);
+
+    // Avanca para a fase 3
+    estadoAtual = FASE_3;
+
+    return;
+  }
+
+  // Se a tentativa terminou por tempo
+  if (fase2_falhou)
+  {
+    // Verifica se o jogador perdeu o jogo
+    if (erros >= 3 || flag_480s)
+    {
+      clr_bit(PORTB, PB1); // D9
+      clr_bit(PORTB, PB2); // D10
+      clr_bit(PORTB, PB4); // D12
+
+      estadoAtual = GAME_OVER;
+      return;
+    }
+
+    // Se ainda pode tentar, inicia outra tentativa
+    Serial.println(F("NOVA TENTATIVA DA FASE 2"));
+
+    nova_tentativa_fase_2();
+  }
+
+  // Atualiza o OLED periodicamente
+  mostrarFase2();
+}
+
+void configurarProtocolo3()
+
+{
+  switch (protocolo)
+  {
+  case 1: // ALFA
+    estadoAcao1 = condicao_inicial;
+    estadoAcao3 = !estadoAcao1;
+    numeroEsperado3 = codigo + 2;
+    acao3 = 3000;
+
+    if (codigo % 2 == 0)
+      acao1 = 2000;
+    else
+      acao1 = 4000;
+
+    break;
+
+  case 2: // BETA
+    estadoAcao1 = !condicao_inicial;
+    estadoAcao3 = condicao_inicial;
+    numeroEsperado3 = codigo + 1;
+    acao3 = 2000;
+
+    if (codigo % 2 == 0)
+      acao1 = 5000;
+    else
+      acao1 = 3000;
+
+    break;
+
+  case 3: // GAMA
+    estadoAcao1 = condicao_inicial;
+    estadoAcao3 = !estadoAcao1;
+    numeroEsperado3 = codigo + 3;
+    acao3 = 4000;
+
+    if (codigo % 2 == 0)
+      acao1 = 3000;
+    else
+      acao1 = 5000;
+
+    break;
+
+  case 4: // DELTA
+    estadoAcao1 = !condicao_inicial;
+    estadoAcao3 = condicao_inicial;
+    numeroEsperado3 = codigo + 4;
+    acao3 = 3000;
+
+    if (codigo % 2 == 0)
+      acao1 = 4000;
+    else
+      acao1 = 2000;
+
+    break;
+  }
+}
+void executarFase3()
+
+{
+  mostrarFase3();
+
+  // Aguardando o jogador iniciar o protocolo
+  if (!jogo3_iniciado)
+  {
+    char tecla = lerTeclaNova();
+
+    if (tecla == '#')
+    {
+      jogo3_iniciado = true;
+      acao_atual = 1;
+
+      configurarProtocolo3();
+
+      // Registra o estado inicial do LDR
+      claro_antes = (meu_analogRead(ldr) >= limite_luz);
+      inicio_estado = meu_millis();
+
+      Serial.println(F("FASE 3 INICIADA!"));
+    }
+
+    return;
+  }
+
+  // ACAO 1 - Verificar estado do LDR
+  if (acao_atual == 1)
+  {
+    uint32_t agora = meu_millis();
+
+    bool claro = (meu_analogRead(ldr) >= limite_luz);
+
+    // Detecta mudança de luminosidade
+    if (claro != claro_antes)
+    {
+      claro_antes = claro;
+      inicio_estado = agora;
+    }
+
+    // Quanto tempo permaneceu nesse estado?
+    uint32_t duracao_estado = agora - inicio_estado;
+
+    if (duracao_estado >= acao1)
+    {
+      if (claro == estadoAcao1)
+      {
+        Serial.println(F("ACAO 1 CONCLUIDA!"));
+
+        acao_atual = 2;
+      }
+      else
+      {
+        registrarErros();
+        inicio_estado = agora;
+
+        Serial.println(F("ERRO NA ACAO 1"));
+      }
+    }
+  }
+  // ACAO 2 - Verificar numero digitado
+  if (acao_atual == 2)
+  {
+    char tecla = lerTeclaNova();
+
+    if (tecla == numeroEsperado3 + '0')
+    {
+      Serial.println(F("ACAO 2 CONCLUIDA!"));
+
+      // Prepara a contagem de tempo da acao 3
+      claro_antes = (meu_analogRead(ldr) >= limite_luz);
+      inicio_estado = meu_millis();
+
+      acao_atual = 3;
+    }
+    else if (tecla != '\0')
+    {
+      registrarErros();
+
+      Serial.println(F("ERRO NA ACAO 2"));
+    }
+  }
+  // ACAO 3 - Verificar estado do LDR
+  if (acao_atual == 3)
+  {
+    uint32_t agora = meu_millis();
+
+    bool claro = (meu_analogRead(ldr) >= limite_luz);
+
+    // Detecta mudança de luminosidade
+    if (claro != claro_antes)
+    {
+      claro_antes = claro;
+      inicio_estado = agora;
+    }
+
+    // Calcula a duração do estado atual
+    uint32_t duracao_estado = agora - inicio_estado;
+
+    if (duracao_estado >= acao3)
+    {
+      if (claro == estadoAcao3)
+      {
+        Serial.println(F("ACAO 3 CONCLUIDA!"));
+        Serial.println(F("FASE 3 CONCLUIDA!"));
+
+        estadoAtual = FASE_4;
+      }
+      else
+      {
+        registrarErros();
+        inicio_estado = agora;
+
+        Serial.println(F("ERRO NA ACAO 3"));
+      }
+    }
+  }
+}
+
 void executarFase4()
 {
   uint32_t agora = meu_millis();
@@ -993,12 +1167,14 @@ void executarFase4()
   // Primeira entrada na fase 4
   if (!fase4Iniciada)
   {
+    agora = meu_millis(); // Atualiza o tempo apos o delay
     fase4Iniciada = true;
 
     passoLed4 = 0;
     led4Aceso = true;
     instanteLed4 = agora;
 
+    delay(2000); // Espera 2 segundos antes de mostrar a sequencia
     set_bit(PORTB, sequencias[escolhido2][passoLed4]);
   }
 
@@ -1098,376 +1274,6 @@ void executarFase4()
   mostrarFase4();
 }
 
-void loopAntigo()
-{
-
-  // Fase 3 - Protocolo de Emergencia
-
-  while (1)
-  {
-    atualizarTempo();
-    mostrarFase3();
-
-    if (flag_480s)
-    {
-      gameover();
-    }
-
-    char tecla = lerTeclaNova();
-
-    // Preparacao da fase
-    if (!jogo3_iniciado)
-    {
-      // OLED mostra protocolo, codigo e condicao inicial
-      // Jogador consulta o manual e pressiona # para iniciar
-
-      if (tecla == '#')
-      {
-
-        jogo3_iniciado = true;
-
-        // Registra o estado inicial do LDR
-        claro_antes = (meu_analogRead(ldr) >= limite_luz);
-        inicio_estado = meu_millis();
-
-        Serial.println(F("FASE 3 INICIADA!"));
-      }
-    }
-
-    // Execucao da fase
-    else
-    {
-      uint8_t numero;
-
-      switch (protocolo)
-      {
-
-      case 1: // ALFA
-        estadoAcao1 = condicao_inicial;
-        estadoAcao3 = !estadoAcao1;
-        numero = codigo + 2;
-        acao3 = 3000;
-
-        if (codigo % 2 == 0)
-          acao1 = 2000;
-        else
-          acao1 = 4000;
-
-        break;
-
-      case 2: // BETA
-        estadoAcao1 = !condicao_inicial;
-        estadoAcao3 = condicao_inicial;
-        numero = codigo + 1;
-        acao3 = 2000;
-
-        if (codigo % 2 == 0)
-          acao1 = 5000;
-        else
-          acao1 = 3000;
-
-        break;
-
-      case 3: // GAMA
-        estadoAcao1 = condicao_inicial;
-        estadoAcao3 = !estadoAcao1;
-        numero = codigo + 3;
-        acao3 = 4000;
-
-        if (codigo % 2 == 0)
-          acao1 = 3000;
-        else
-          acao1 = 5000;
-
-        break;
-
-      case 4: // DELTA
-        estadoAcao1 = !condicao_inicial;
-        estadoAcao3 = condicao_inicial;
-        numero = codigo + 4;
-        acao3 = 3000;
-
-        if (codigo % 2 == 0)
-          acao1 = 4000;
-        else
-          acao1 = 2000;
-
-        break;
-      }
-
-      acao_atual = 1;
-
-      while (1)
-      {
-
-        atualizarTempo();
-        mostrarFase3();
-
-        uint16_t luminosidade = meu_analogRead(ldr);
-        bool claro = (luminosidade >= limite_luz);
-
-        if (claro != claro_antes)
-        {
-          inicio_estado = meu_millis();
-          claro_antes = claro;
-        }
-
-        unsigned long duracao_estado = meu_millis() - inicio_estado;
-
-        if (duracao_estado >= acao1 && claro == estadoAcao1)
-        {
-          Serial.println(F("Acao 1 concluida"));
-          break;
-        }
-
-        if (duracao_estado >= acao1 && claro != estadoAcao1)
-        {
-          registrarErros();
-          Serial.println(erros);
-          inicio_estado = meu_millis();
-        }
-
-        if (erros >= 3)
-        {
-          gameover();
-        }
-
-        if (flag_480s)
-        {
-          gameover();
-        }
-
-        delay(20);
-      }
-      acao_atual = 2;
-
-      while (1)
-      {
-        atualizarTempo();
-        mostrarFase3();
-        tecla = lerTeclaNova();
-        if (tecla == numero + '0')
-        {
-          Serial.println(F("Acao 2 completa"));
-
-          inicio_estado = meu_millis();
-          claro_antes = (meu_analogRead(ldr) >= limite_luz);
-          break;
-        }
-
-        if (tecla != '\0' && tecla != numero + '0')
-        {
-          registrarErros();
-          Serial.println(erros);
-        }
-
-        if (erros >= 3)
-        {
-          gameover();
-        }
-
-        if (flag_480s)
-        {
-          gameover();
-        }
-      }
-
-      acao_atual = 3;
-      while (1)
-      {
-        atualizarTempo();
-        mostrarFase3();
-
-        uint16_t luminosidade = meu_analogRead(ldr);
-        bool claro = (luminosidade >= limite_luz);
-
-        if (claro != claro_antes)
-        {
-          inicio_estado = meu_millis();
-          claro_antes = claro;
-        }
-
-        unsigned long duracao_estado = meu_millis() - inicio_estado;
-
-        if (duracao_estado >= acao3 && claro == estadoAcao3)
-        {
-          Serial.println(("Acao 3 concluida"));
-          break;
-        }
-
-        if (duracao_estado >= acao3 && claro != estadoAcao3)
-        {
-          registrarErros();
-
-          Serial.print("ERRO ACAO 3 | ADC: ");
-          Serial.print(luminosidade);
-
-          Serial.print(" | Esperado: ");
-          Serial.print(estadoAcao3 ? "CLARO" : "ESCURO");
-
-          Serial.print(" | Lido: ");
-          Serial.println(claro ? "CLARO" : "ESCURO");
-
-          inicio_estado = meu_millis();
-        }
-
-        if (erros >= 3)
-        {
-          gameover();
-        }
-
-        if (flag_480s)
-        {
-          gameover();
-        }
-        delay(20);
-      }
-      Serial.println(F("FASE 3 CONCLUIDA!"));
-      break;
-    }
-  }
-//====================================================================
-
-<<<<<<< HEAD
-
-
-// Jogo 2
-//====================================================================
-nova_tentativa_fase_2();          // começa a fase: sorteia a 1ª configuração
-
-while (true)
-{
-    pisca_led();
-    resposta_potenciometros();
-
-    if (fase2_falhou)
-    { 
-      tone(buzzer, 300, 300);   //tone(pino, frequencia, duracao);
-      nova_tentativa_fase_2();
-    }
-    if (fase2_concluida) 
-    {
-      break;
-    }
-
-    //precisamos manter a checagem da interrupcao e dos erros
-    
-    if (erros >= 3){
-      gameover(); 
-      
-    }
-    
-    if(flag_480s) {
-     gameover();
-     flag_480s = false;
-    }
-}
-//====================================================================
-  Serial.println("prox jogo");
-  tempo_restante = tempo_limite - segundos;
-  
-=======
->>>>>>> origin/main
-  Serial.println(F("prox jogo"));
-  atualizarTempo();
-  delay(5000);
-
-  // game 4
-  /*
-  LEDs acendem em uma sequência específica
-  Cada sequência corresponde a um código de 6 digitos que precisa ser digitado no Keypad
-  O jogador pode tocar a sequência novamente uma única vez.
-  Digitar um código de 6 digitos errado conta como 1 erro.
-  sequências: (Cores a detrminar)
-      seq1: LED 1, LED 2, LED 3, LED 4
-      seq2: LED 4, LED 3, LED 2, LED 1
-      seq3: LED 1, LED 3, LED 2, LED 4
-      seq4: LED 3, LED 2, LED 4, LED 1
-  códigos:
-      seq1: 773894
-      seq2: 773492
-      seq3: 713892
-      seq4: 778462
-  */
-
-  atualizarTempo();
-  display.clearDisplay();
-  atualizarOLED();
-  display.setCursor(0, 20);
-  display.println(F("*: tocar novamente"));
-  display.display();
-
-  TocaSequencia(); // toca a seq. 1 vez
-
-  while (1)
-  {
-
-    atualizarTempo();
-    mostrarFase4();
-
-    if (erros >= 3 || flag_480s)
-    {
-      gameover();
-    }
-    char tecla = lerTeclaNova();
-
-    if (tecla != '\0')
-    {
-      if (tecla == '*')
-      {
-        if (PodeTocarDenovo)
-        {
-          TocaSequencia();
-          PodeTocarDenovo = false;
-          display.println(F("Replay usado")); // testar como fica no display
-          display.display();
-          Serial.println(F("Replay usado"));
-        }
-      }
-      else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
-      {
-        digito = 0;
-        Serial.println(F("Entrada limpa"));
-      }
-
-      else if (digito < 6)
-      {
-        tentativa[digito] = tecla;
-        digito++;
-        Serial.print(F("Digitado: "));
-        Serial.println(tecla);
-      }
-    }
-    if (digito >= 6)
-    {
-      bool correto = true;
-      for (uint8_t i = 0; i < 6; i++)
-      {
-        if (tentativa[i] != codigo_sequencias[escolhido2][i])
-        {
-          correto = false;
-          break;
-        }
-      }
-      if (correto)
-      {
-        Serial.println(F("Sequencia correta. Jogo Encerrado")); //
-        break;
-      }
-      else
-      {
-        Serial.println(F("Codigo Incorreto"));
-        registrarErros();
-        Serial.println(erros);
-        digito = 0;
-      }
-    }
-  }
-  while (1)
-  {
-  } // pausa o jogo pra ele não resetar automaticamente
-}
-
 void loop()
 {
 
@@ -1532,7 +1338,7 @@ void loop()
 
       TCCR2B = (1 << CS22);
 
-      estadoAtual = FASE_4; // Temporario para teste
+      estadoAtual = FASE_1;
 
       Serial.println(F("JOGO INICIADO!"));
     }
@@ -1547,10 +1353,12 @@ void loop()
 
   case FASE_2:
     // Executar fase 2
+    executarFase2();
     break;
 
   case FASE_3:
     // Executar fase 3
+    executarFase3();
     break;
 
   case FASE_4:
@@ -1597,6 +1405,7 @@ void loop()
     {
       TCCR2B = 0;          // Para o cronometro
       PORTB &= 0b11110000; // Desliga os 4 LEDs
+      clr_bit(PORTB, PB4);
       atualizarTempo();
 
       display.clearDisplay();
