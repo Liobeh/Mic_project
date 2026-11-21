@@ -366,6 +366,33 @@ void mostrarFase3()
   display.display();
 }
 
+void mostrarFase4()
+{
+  static uint32_t ultimaAtualizacao = 0;
+  uint32_t agora = meu_millis();
+
+  if (agora - ultimaAtualizacao < 250)
+  {
+    return;
+  }
+  ultimaAtualizacao = agora;
+
+  display.clearDisplay();
+  atualizarOLED();
+
+  display.setCursor(0, 20);
+  if (PodeTocarDenovo)
+  {
+    display.println(F("*: tocar novamente"));
+  }
+  else
+  {
+    display.println(F("Replay usado"));
+  }
+
+  display.display();
+}
+
 void setup()
 {
 
@@ -832,18 +859,21 @@ void loop()
       seq4: 778462
   */
 
+  atualizarTempo();
   display.clearDisplay();
-
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
+  atualizarOLED();
   display.setCursor(0, 20);
-
-  display.println(F("*: tocar novamente")); //testar como fica no display
+  display.println(F("*: tocar novamente"));
   display.display();
+
   TocaSequencia(); // toca a seq. 1 vez
 
   while(1) 
   {
+
+    atualizarTempo();
+    mostrarFase4();
+    
     if (erros >= 3 || flag_480s) {
     gameover();
     }
@@ -857,9 +887,6 @@ void loop()
         {
           TocaSequencia();
           PodeTocarDenovo = false;
-          display.println(F("Replay usado")); //testar como fica no display
-          display.display();
-          Serial.println(F("Replay usado"));
         }
       }
       else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
@@ -902,5 +929,4 @@ void loop()
       }
   }
   while (1){} // pausa o jogo pra ele não resetar automaticamente
-}
 }
