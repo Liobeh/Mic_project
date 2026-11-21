@@ -37,6 +37,17 @@ bool PodeTocarDenovo = true;
 uint8_t digito = 0;
 char tentativa[6];
 
+// interrupcoes
+volatile bool flag_480s = false;  // flag tempo
+volatile bool flag_botao = false; // flag botao pressionado
+
+// timers
+volatile uint32_t ms = 0;
+volatile uint16_t contador_ms = 0;
+volatile uint16_t segundos = 0; // timer
+const uint16_t tempo_limite = 480;
+uint16_t tempo_restante = 0;
+
 // substituindo funções prontas do arduino
 uint32_t meu_millis()
 {
@@ -150,17 +161,6 @@ char lerTeclaNova()
 
     return resultado;
 }
-
-// interrupcoes
-volatile bool flag_480s = false;  // flag tempo
-volatile bool flag_botao = false; // flag botao pressionado
-
-// timers
-volatile uint32_t ms = 0;
-volatile uint16_t contador_ms = 0;
-volatile uint16_t segundos = 0; // timer
-const uint16_t tempo_limite = 480;
-uint16_t tempo_restante = 0;
 
 // erros
 uint8_t erros = 0;
@@ -393,7 +393,7 @@ void loop()
     {
       flag_botao = false;
 
-      Serial.println(F("BOTAO PRESSIONADO!)");
+      Serial.println(F("BOTAO PRESSIONADO!"));
 
       // IA
 
