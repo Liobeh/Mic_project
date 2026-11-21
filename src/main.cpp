@@ -7,10 +7,10 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define set_bit(reg, bit) ((reg) |= (1 << (bit)))   // coloca o bit em 1
-#define clr_bit(reg, bit) ((reg) &= ~(1 << (bit)))  // coloca o bit em 0
-#define cpl_bit(reg, bit) ((reg) ^= (1 << (bit)))   // inverte o bit
-#define tst_bit(reg, bit) ((reg) & (1 << (bit)))    // testa o estado do bit
+#define set_bit(reg, bit) ((reg) |= (1 << (bit)))  // coloca o bit em 1
+#define clr_bit(reg, bit) ((reg) &= ~(1 << (bit))) // coloca o bit em 0
+#define cpl_bit(reg, bit) ((reg) ^= (1 << (bit)))  // inverte o bit
+#define tst_bit(reg, bit) ((reg) & (1 << (bit)))   // testa o estado do bit
 
 // Dimensões da tela
 #define SCREEN_WIDTH 128
@@ -37,11 +37,15 @@ uint8_t codigo;
 uint8_t condicao_inicial;
 #define ldr 1 // A1
 
-// game 4
+// fase 4
 uint8_t escolhido2;
 bool PodeTocarDenovo = true;
 uint8_t digito = 0;
 char tentativa[6];
+bool fase4Iniciada = false;
+uint8_t passoLed4 = 0;
+bool led4Aceso = false;
+uint32_t instanteLed4 = 0;
 
 // interrupcoes
 volatile bool flag_480s = false;  // flag tempo
@@ -220,9 +224,11 @@ const char codigo_sequencias[4][6] = {
     {'7', '1', '3', '8', '9', '2'},  // seq3
     {'7', '7', '8', '4', '6', '2'}}; // seq4
 
-void Sequencia(const uint8_t seq[], uint8_t passos) {
+void Sequencia(const uint8_t seq[], uint8_t passos)
+{
   /* acende e desliga LEDs na ordem da lista */
-  for (uint8_t i = 0; i < passos; i++) {
+  for (uint8_t i = 0; i < passos; i++)
+  {
     uint8_t atual = seq[i];
 
     set_bit(PORTB, atual);
@@ -319,6 +325,11 @@ void reiniciarJogo()
   // Reinicia a fase 4
   PodeTocarDenovo = true;
   digito = 0;
+  fase4Iniciada = false;
+  passoLed4 = 0;
+  led4Aceso = false;
+
+  PORTB &= 0b11110000; // Desliga PB0 a PB3
 
   // Sorteia novos desafios
   escolhido = random(4, 8);
@@ -536,16 +547,25 @@ void setup()
 
   // config pinos para a fase1
 
-  set_bit(DDRB, led_1);   clr_bit(PORTB, led_1);   // Config leds (PB0 até PB3)
-  set_bit(DDRB, led_2);   clr_bit(PORTB, led_2);
-  set_bit(DDRB, led_3);   clr_bit(PORTB, led_3);
-  set_bit(DDRB, led_4);   clr_bit(PORTB, led_4);
+  set_bit(DDRB, led_1);
+  clr_bit(PORTB, led_1); // Config leds (PB0 até PB3)
+  set_bit(DDRB, led_2);
+  clr_bit(PORTB, led_2);
+  set_bit(DDRB, led_3);
+  clr_bit(PORTB, led_3);
+  set_bit(DDRB, led_4);
+  clr_bit(PORTB, led_4);
 
-  clr_bit(DDRD, botao);   set_bit(PORTD, botao);  //config botão e switches (PD3 até PD7)
-  clr_bit(DDRD, chave_4); set_bit(PORTD, chave_4);
-  clr_bit(DDRD, chave_5); set_bit(PORTD, chave_5);
-  clr_bit(DDRD, chave_6); set_bit(PORTD, chave_6);
-  clr_bit(DDRD, chave_7); set_bit(PORTD, chave_7);
+  clr_bit(DDRD, botao);
+  set_bit(PORTD, botao); // config botão e switches (PD3 até PD7)
+  clr_bit(DDRD, chave_4);
+  set_bit(PORTD, chave_4);
+  clr_bit(DDRD, chave_5);
+  set_bit(PORTD, chave_5);
+  clr_bit(DDRD, chave_6);
+  set_bit(PORTD, chave_6);
+  clr_bit(DDRD, chave_7);
+  set_bit(PORTD, chave_7);
 
   // setup registradores principais
   cli();
@@ -609,85 +629,180 @@ void gameover()
   Serial.println("Game Over");
 }
 
-void loopAntigo()
+void executarFase1()
 {
+  static uint32_t ultimaAtualizacao = 0;
 
-  // jogo 1
-
-  while (1)
+  if (meu_millis() - ultimaAtualizacao >= 200)
   {
-    atualizarTempo(); // calcula tempo restante
-
-    // os switches disponiveis sao os switches 1 a 4
-
-    // Aparece um engima no painel associado ao switch escolhido, que o jogador com a bomba deve descrever para o jogador com o manual
-    // o jogador com o manual deve descobrir qual eh o switch correto para ligar
-    // o jogador com a bomba liga o switch e aperta um botao de confirmacao
-
-    // display
+    ultimaAtualizacao = meu_millis();
 
     display.clearDisplay();
     atualizarOLED();
 
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-
     display.setCursor(0, 20);
 
-    // escolhe um códgio diferente p/ cada switch
     switch (escolhido)
     {
     case 4:
       display.println(F("KEY-8B52-O1"));
       break;
+
     case 5:
       display.println(F("KEY-BB52-01"));
       break;
+
     case 6:
       display.println(F("KEY-8B5Z-0l"));
       break;
+
     case 7:
       display.println(F("KEY-B8SZ-Ol"));
       break;
     }
 
     display.display();
+  }
+  if (flag_botao)
+  {
+    flag_botao = false;
 
-    if (flag_botao)
+    // Define qual combinacao de switches esperamos
+    uint8_t esperado = 0b11110000;
+    clr_bit(esperado, escolhido);
+
+    // Verifica os switches
+    if ((PIND & 0b11110000) == esperado)
     {
-      flag_botao = false;
+      Serial.println(F("FASE 1 CONCLUIDA!"));
 
-      Serial.println("BOTAO PRESSIONADO!");
-
-      uint8_t esperado = 0b11110000;
-      clr_bit(esperado, escolhido);
-
-      if ((PIND & 0b11110000) == esperado)
-      {
-        Serial.println("SWITCH CORRETO!");
-        break;
-      }
-
-      else
-      {
-        registrarErros();
-        Serial.println(erros);
-      }
+      estadoAtual = FASE_2;
     }
-
-    // precisamos manter a checagem da interrupcao e dos erros
-
-    if (erros >= 3)
+    else
     {
-      gameover();
-    }
+      registrarErros();
 
-    if (flag_480s)
-    {
-      gameover();
-      flag_480s = false;
+      Serial.println(F("SWITCH INCORRETO!"));
+      Serial.print(F("Erros: "));
+      Serial.println(erros);
     }
   }
+}
+
+void executarFase4()
+{
+  uint32_t agora = meu_millis();
+
+  // Primeira entrada na fase 4
+  if (!fase4Iniciada)
+  {
+    fase4Iniciada = true;
+
+    passoLed4 = 0;
+    led4Aceso = true;
+    instanteLed4 = agora;
+
+    set_bit(PORTB, sequencias[escolhido2][passoLed4]);
+  }
+
+  // Ainda existem LEDs na sequencia?
+  if (passoLed4 < 4)
+  {
+    // Verifica se o LED ficou ligado por 500 ms
+    if (led4Aceso && agora - instanteLed4 >= 500)
+    {
+      clr_bit(PORTB, sequencias[escolhido2][passoLed4]);
+
+      led4Aceso = false;
+      instanteLed4 = agora;
+    }
+
+    // Verifica se ficou desligado por 200 ms
+    else if (!led4Aceso && agora - instanteLed4 >= 200)
+    {
+      passoLed4++;
+
+      if (passoLed4 < 4)
+      {
+        set_bit(PORTB, sequencias[escolhido2][passoLed4]);
+
+        led4Aceso = true;
+        instanteLed4 = agora;
+      }
+    }
+  }
+  // Sequencia terminou: permite repetir uma vez
+  // A sequência terminou: libera o keypad
+  if (passoLed4 >= 4)
+  {
+    char tecla = lerTeclaNova();
+
+    // Repetir a sequência uma única vez
+    if (tecla == '*' && PodeTocarDenovo)
+    {
+      PodeTocarDenovo = false;
+
+      passoLed4 = 0;
+      led4Aceso = true;
+      instanteLed4 = agora;
+
+      set_bit(PORTB, sequencias[escolhido2][passoLed4]);
+
+      Serial.println(F("REPLAY UTILIZADO!"));
+    }
+
+    // Limpar os dígitos digitados
+    else if (tecla == '#')
+    {
+      digito = 0;
+      Serial.println(F("ENTRADA LIMPA"));
+    }
+
+    // Registrar um dígito de 0 a 9
+    else if (tecla >= '0' && tecla <= '9' && digito < 6)
+    {
+      tentativa[digito] = tecla;
+      digito++;
+
+      Serial.print(F("Digitado: "));
+      Serial.println(tecla);
+
+      // Recebemos os seis dígitos?
+      if (digito == 6)
+      {
+        bool correto = true;
+
+        for (uint8_t i = 0; i < 6; i++)
+        {
+          if (tentativa[i] != codigo_sequencias[escolhido2][i])
+          {
+            correto = false;
+            break;
+          }
+        }
+
+        if (correto)
+        {
+          Serial.println(F("FASE 4 CONCLUIDA!"));
+          estadoAtual = VITORIA;
+        }
+        else
+        {
+          registrarErros();
+          digito = 0;
+
+          Serial.println(F("CODIGO INCORRETO!"));
+          Serial.print(F("Erros: "));
+          Serial.println(erros);
+        }
+      }
+    }
+  }
+  mostrarFase4();
+}
+
+void loopAntigo()
+{
 
   // Fase 3 - Protocolo de Emergencia
 
@@ -951,7 +1066,7 @@ void loopAntigo()
 
     atualizarTempo();
     mostrarFase4();
-    
+
     if (erros >= 3 || flag_480s)
     {
       gameover();
@@ -1075,10 +1190,11 @@ void loop()
       segundos = 0;
       erros = 0;
       flag_480s = false;
+      flag_botao = false;
 
       TCCR2B = (1 << CS22);
 
-      estadoAtual = FASE_3; // Temporario para teste
+      estadoAtual = FASE_4; // Temporario para teste
 
       Serial.println(F("JOGO INICIADO!"));
     }
@@ -1088,6 +1204,7 @@ void loop()
 
   case FASE_1:
     // Executar fase 1
+    executarFase1();
     break;
 
   case FASE_2:
@@ -1100,6 +1217,7 @@ void loop()
 
   case FASE_4:
     // Executar fase 4
+    executarFase4();
     break;
 
   case VITORIA:
@@ -1139,8 +1257,8 @@ void loop()
 
     if (!telaGameOverMostrada)
     {
-      TCCR2B = 0; // Para o cronometro
-
+      TCCR2B = 0;          // Para o cronometro
+      PORTB &= 0b11110000; // Desliga os 4 LEDs
       atualizarTempo();
 
       display.clearDisplay();
@@ -1171,7 +1289,7 @@ void loop()
     }
 
     verificarReinicio();
-    
+
     break;
   }
   }
