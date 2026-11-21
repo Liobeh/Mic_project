@@ -18,8 +18,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // fase 3
 bool jogo3_iniciado = false;
+uint8_t acao_atual = 0;
 bool claro_antes;
-uint16_t limite_luz = 800;
+uint16_t limite_luz = 500;
 unsigned long inicio_estado = 0;
 unsigned long acao1;
 unsigned long acao3;
@@ -143,8 +144,8 @@ char lerTeclaNova()
       return '\0';
     }
 
-    char atual = lerTeclado();
-    char resultado = '\0';
+  char atual = lerTeclado();
+  char resultado = '\0';
 
     if (atual != '\0' && anterior == '\0') // quando aperta a tecla
     {
@@ -157,9 +158,9 @@ char lerTeclaNova()
       ultimoTempo = meu_millis();
     }
 
-    anterior = atual;
+  anterior = atual;
 
-    return resultado;
+  return resultado;
 }
 
 // erros
@@ -238,6 +239,125 @@ ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
   }
 }
 
+
+// setup do tempo atual
+void atualizarTempo()
+{
+  uint16_t tempo_decorrido;
+
+  uint8_t estado = SREG;
+  cli();
+
+  tempo_decorrido = segundos;
+
+  SREG = estado;
+
+  if (tempo_decorrido >= tempo_limite)
+  {
+    tempo_restante = 0;
+  }
+  else
+  {
+    tempo_restante = tempo_limite - tempo_decorrido;
+  }
+}
+
+// Display
+void atualizarOLED()
+{
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+  uint8_t minutos = tempo_restante / 60;
+  uint8_t segundos_restantes = tempo_restante % 60;
+
+  display.setCursor(0, 0);
+  display.print("Tempo: ");
+  display.print(minutos);
+  display.print(":");
+
+  if (segundos_restantes < 10)
+  {
+    display.print("0");
+  }
+
+  display.print(segundos_restantes);
+  display.setCursor(88, 0);
+  display.print("E:");
+  display.print(erros);
+
+  display.drawLine(0, 12, 127, 12, SSD1306_WHITE);
+}
+
+void mostrarFase3()
+{
+  static uint32_t ultimaAtualizacao = 0;
+
+  uint32_t agora = meu_millis();
+
+  if (agora - ultimaAtualizacao < 250)
+  {
+    return;
+  }
+
+  ultimaAtualizacao = agora;
+
+  display.clearDisplay();
+  atualizarOLED();  
+
+  // Protocolo sorteado
+  display.setCursor(0, 17);
+  display.print(F("Protocolo: "));
+
+  switch (protocolo)
+  {
+  case 1:
+    display.print(F("ALFA"));
+    break;
+  case 2:
+    display.print(F("BETA"));
+    break;
+  case 3:
+    display.print(F("GAMA"));
+    break;
+  case 4:
+    display.print(F("DELTA"));
+    break;
+  }
+
+  // Codigo sorteado
+  display.setCursor(0, 28);
+  display.print(F("Codigo: "));
+  display.print(codigo);
+
+  // Condicao inicial
+  display.setCursor(0, 39);
+  display.print(F("Inicial: "));
+
+  if (condicao_inicial == 1)
+  {
+    display.print(F("CLARO"));
+  }
+  else
+  {
+    display.print(F("ESCURO"));
+  }
+
+  // Instrucao ao jogador
+  display.setCursor(0, 54);
+
+  if (!jogo3_iniciado)
+  {
+    display.print(F("# PARA INICIAR"));
+  }
+  else
+  {
+    display.print(F("ACAO "));
+    display.print(acao_atual);
+  }
+
+  display.display();
+}
 
 void setup()
 {
@@ -338,10 +458,34 @@ void setup()
 // funcao auto-explicativa
 void gameover()
 {
-  flag_480s = false;
-  TCCR2B = 0; /* timer parado */
-  Serial.println(F("Game Over"));
-  Serial.println(F("Faça tal para reiniciar o jogo"));
+  TCCR2B = 0; // Para o timer
+
+  atualizarTempo();
+
+  display.clearDisplay();
+  atualizarOLED();
+
+  display.setCursor(0, 20);
+  display.println(F("GAME OVER"));
+
+  display.setCursor(0, 34);
+
+  if (erros >= 3)
+  {
+    display.println(F("3 erros cometidos"));
+  }
+  else if (flag_480s)
+  {
+    display.println(F("Tempo esgotado"));
+  }
+
+  display.setCursor(0, 50);
+  display.println(F("Reinicie: RESET"));
+
+  display.display();
+
+  Serial.println("Game Over");
+
   while (1)
   {
   }
@@ -352,8 +496,9 @@ void loop()
 
   // jogo 1
 
-    while (1)
+  while (1)
   {
+    atualizarTempo(); // calcula tempo restante
 
     // os switches disponiveis sao os switches 1 a 4
 
@@ -364,6 +509,7 @@ void loop()
     // display
 
     display.clearDisplay();
+    atualizarOLED();
 
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
@@ -393,7 +539,7 @@ void loop()
     {
       flag_botao = false;
 
-      Serial.println(F("BOTAO PRESSIONADO!"));
+      Serial.println("BOTAO PRESSIONADO!");
 
       // IA
 
@@ -406,7 +552,7 @@ void loop()
       // Verifica se somente o switch sorteado está ligado
       if ((PIND & 0b11110000) == esperado)
       {
-        Serial.println(F("SWITCH CORRETO!"));
+        Serial.println("SWITCH CORRETO!");
         break;
       }
 
@@ -415,7 +561,6 @@ void loop()
         erros++;
         Serial.println(erros);
       }
-
     }
 
     // precisamos manter a checagem da interrupcao e dos erros
@@ -437,6 +582,13 @@ void loop()
   
   while (1)
   {
+    atualizarTempo();
+    mostrarFase3();
+
+    if (flag_480s)
+    {
+      gameover();
+    }
 
     char tecla = lerTeclaNova();
 
@@ -452,7 +604,7 @@ void loop()
         jogo3_iniciado = true;
 
         // Registra o estado inicial do LDR
-        claro_antes = (meu_analogRead(ldr) < limite_luz);
+        claro_antes = (meu_analogRead(ldr) >= limite_luz);
         inicio_estado = meu_millis();
 
         Serial.println(F("FASE 3 INICIADA!"));
@@ -482,7 +634,7 @@ void loop()
 
       case 2: // BETA
         estadoAcao1 = !condicao_inicial;
-        estadoAcao3 = estadoAcao1;
+        estadoAcao3 = condicao_inicial;
         numero = codigo + 1;
         acao3 = 2000;
 
@@ -508,7 +660,7 @@ void loop()
 
       case 4: // DELTA
         estadoAcao1 = !condicao_inicial;
-        estadoAcao3 = estadoAcao1;
+        estadoAcao3 = condicao_inicial;
         numero = codigo + 4;
         acao3 = 3000;
 
@@ -520,10 +672,16 @@ void loop()
         break;
       }
 
+      acao_atual = 1;
+
       while (1)
       {
+
+        atualizarTempo();
+        mostrarFase3();
+
         uint16_t luminosidade = meu_analogRead(ldr);
-        bool claro = (luminosidade < limite_luz);
+        bool claro = (luminosidade >= limite_luz);
 
         if (claro != claro_antes)
         {
@@ -558,15 +716,19 @@ void loop()
 
         delay(20);
       }
+      acao_atual = 2;
+
       while (1)
       {
+        atualizarTempo();
+        mostrarFase3();
         tecla = lerTeclaNova();
         if (tecla == numero + '0')
         {
           Serial.println(F("Acao 2 completa"));
 
           inicio_estado = meu_millis();
-          claro_antes = (meu_analogRead(ldr) < limite_luz);
+          claro_antes = (meu_analogRead(ldr) >= limite_luz);
           break;
         }
 
@@ -586,10 +748,15 @@ void loop()
           gameover();
         }
       }
+
+      acao_atual = 3;
       while (1)
       {
+        atualizarTempo();
+        mostrarFase3();
+
         uint16_t luminosidade = meu_analogRead(ldr);
-        bool claro = (luminosidade < limite_luz);
+        bool claro = (luminosidade >= limite_luz);
 
         if (claro != claro_antes)
         {
@@ -608,7 +775,16 @@ void loop()
         if (duracao_estado >= acao3 && claro != estadoAcao3)
         {
           erros++;
-          Serial.println(erros);
+
+          Serial.print("ERRO ACAO 3 | ADC: ");
+          Serial.print(luminosidade);
+
+          Serial.print(" | Esperado: ");
+          Serial.print(estadoAcao3 ? "CLARO" : "ESCURO");
+
+          Serial.print(" | Lido: ");
+          Serial.println(claro ? "CLARO" : "ESCURO");
+
           inicio_estado = meu_millis();
         }
 
