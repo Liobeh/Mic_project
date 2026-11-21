@@ -186,7 +186,9 @@ void registrarErros(){
 #define led_1 PB0 // D8
 #define led_2 PB1 // D9
 #define led_3 PB2 // D10
-#define led_4 PB3 // D11
+#define led_4 PB4 // D12
+
+#define buzzer PB4 //D11 (Buzzer precisa ser D3, D5, D6, D9, D10 ou D11 pra poder usar o timer)
 
 //sequências
 const uint8_t sequencias[4][4] = {
@@ -467,6 +469,10 @@ void setup()
   clr_bit(DDRD, chave_6); set_bit(PORTD, chave_6);
   clr_bit(DDRD, chave_7); set_bit(PORTD, chave_7);
 
+  //config do buzzer
+  set_bit(DDRB, buzzer);
+  clr_bit(PORTB, buzzer); // Garante nivel LOW (silencio) quando OC1A for desconectado
+  clr_bit(TCCR1A, COM1A0);    // Comeca com o som desligado
   // setup registradores principais
   cli();
 
