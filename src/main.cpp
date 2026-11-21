@@ -7,6 +7,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define set_bit(reg, bit) ((reg) |= (1 << (bit)))   // coloca o bit em 1
+#define clr_bit(reg, bit) ((reg) &= ~(1 << (bit)))  // coloca o bit em 0
+#define cpl_bit(reg, bit) ((reg) ^= (1 << (bit)))   // inverte o bit
+#define tst_bit(reg, bit) ((reg) & (1 << (bit)))    // testa o estado do bit
+
 // Dimensões da tela
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -85,10 +90,10 @@ uint16_t meu_analogRead(uint8_t canal)
   ADMUX = (1 << REFS0) | canal;
 
   // Inicia a conversao
-  ADCSRA |= (1 << ADSC);
+  set_bit(ADCSRA, ADSC);
 
   // Espera a conversao terminar
-  while (ADCSRA & (1 << ADSC))
+  while (tst_bit(ADCSRA, ADSC))
     ;
 
   // Retorna o resultado
@@ -130,7 +135,7 @@ char lerTeclado()
   {
     byte estado = 0xFF;
 
-    estado &= ~(1 << pinosLinhas[i]);
+    clr_bit(estado, pinosLinhas[i]);
 
     escreverPCF(estado);
     delayMicroseconds(100);
@@ -139,7 +144,7 @@ char lerTeclado()
 
     for (int j = 0; j < 3; j++)
     {
-      if (!(leitura & (1 << pinosColunas[j])))
+      if (!tst_bit(leitura, pinosColunas[j]))
       {
         escreverPCF(0xFF);
         return teclas[i][j];
@@ -196,10 +201,10 @@ void registrarErros()
 #define chave_7 7
 #define botao 3
 
-#define led_1 8
-#define led_2 9
-#define led_3 10
-#define led_4 11
+#define led_1 PB0 // D8
+#define led_2 PB1 // D9
+#define led_3 PB2 // D10
+#define led_4 PB3 // D11
 
 // sequências
 const uint8_t sequencias[4][4] = {
@@ -215,17 +220,14 @@ const char codigo_sequencias[4][6] = {
     {'7', '1', '3', '8', '9', '2'},  // seq3
     {'7', '7', '8', '4', '6', '2'}}; // seq4
 
-void Sequencia(const uint8_t seq[], uint8_t passos)
-{
-  /* acende e desliga LEDs na ordem da lista
-   */
-  for (uint8_t i = 0; i < passos; i++)
-  {
+void Sequencia(const uint8_t seq[], uint8_t passos) {
+  /* acende e desliga LEDs na ordem da lista */
+  for (uint8_t i = 0; i < passos; i++) {
     uint8_t atual = seq[i];
 
-    digitalWrite(atual, HIGH);
+    set_bit(PORTB, atual);
     delay(500);
-    digitalWrite(atual, LOW);
+    clr_bit(PORTB, atual);
     delay(200);
   }
 }
@@ -449,6 +451,33 @@ void mostrarFase3()
   display.display();
 }
 
+void mostrarFase4()
+{
+  static uint32_t ultimaAtualizacao = 0;
+  uint32_t agora = meu_millis();
+
+  if (agora - ultimaAtualizacao < 250)
+  {
+    return;
+  }
+  ultimaAtualizacao = agora;
+
+  display.clearDisplay();
+  atualizarOLED();
+
+  display.setCursor(0, 20);
+  if (PodeTocarDenovo)
+  {
+    display.println(F("*: tocar novamente"));
+  }
+  else
+  {
+    display.println(F("Replay usado"));
+  }
+
+  display.display();
+}
+
 void setup()
 {
 
@@ -507,13 +536,16 @@ void setup()
 
   // config pinos para a fase1
 
-  pinMode(led_1, OUTPUT); // config dos LEDs
-  pinMode(led_2, OUTPUT); // trocar função por registradores
-  pinMode(led_3, OUTPUT); // (que nem no codigo em baixo)
-  pinMode(led_4, OUTPUT);
+  set_bit(DDRB, led_1);   clr_bit(PORTB, led_1);   // Config leds (PB0 até PB3)
+  set_bit(DDRB, led_2);   clr_bit(PORTB, led_2);
+  set_bit(DDRB, led_3);   clr_bit(PORTB, led_3);
+  set_bit(DDRB, led_4);   clr_bit(PORTB, led_4);
 
-  DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)); // config dos switches
-  PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
+  clr_bit(DDRD, botao);   set_bit(PORTD, botao);  //config botão e switches (PD3 até PD7)
+  clr_bit(DDRD, chave_4); set_bit(PORTD, chave_4);
+  clr_bit(DDRD, chave_5); set_bit(PORTD, chave_5);
+  clr_bit(DDRD, chave_6); set_bit(PORTD, chave_6);
+  clr_bit(DDRD, chave_7); set_bit(PORTD, chave_7);
 
   // setup registradores principais
   cli();
@@ -627,15 +659,9 @@ void loopAntigo()
 
       Serial.println("BOTAO PRESSIONADO!");
 
-      // IA
+      uint8_t esperado = 0b11110000;
+      clr_bit(esperado, escolhido);
 
-      // Identifica o bit correspondente ao switch sorteado
-      uint8_t mascara = (1 << escolhido);
-
-      // Define a combinação correta dos quatro switches
-      uint8_t esperado = 0b11110000 & ~mascara;
-
-      // Verifica se somente o switch sorteado está ligado
       if ((PIND & 0b11110000) == esperado)
       {
         Serial.println("SWITCH CORRETO!");
@@ -911,18 +937,21 @@ void loopAntigo()
       seq4: 778462
   */
 
+  atualizarTempo();
   display.clearDisplay();
-
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
+  atualizarOLED();
   display.setCursor(0, 20);
-
-  display.println(F("*: tocar novamente")); // testar como fica no display
+  display.println(F("*: tocar novamente"));
   display.display();
+
   TocaSequencia(); // toca a seq. 1 vez
 
   while (1)
   {
+
+    atualizarTempo();
+    mostrarFase4();
+    
     if (erros >= 3 || flag_480s)
     {
       gameover();
