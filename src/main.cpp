@@ -7,6 +7,11 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#define set_bit(reg, bit) ((reg) |= (1 << (bit)))  // coloca o bit em 1
+#define clr_bit(reg, bit) ((reg) &= ~(1 << (bit))) // coloca o bit em 0
+#define cpl_bit(reg, bit) ((reg) ^= (1 << (bit)))  // inverte o bit
+#define tst_bit(reg, bit) ((reg) & (1 << (bit)))   // testa o estado do bit
+
 // Dimensões da tela
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -32,11 +37,15 @@ uint8_t codigo;
 uint8_t condicao_inicial;
 #define ldr 1 // A1
 
-// game 4
+// fase 4
 uint8_t escolhido2;
 bool PodeTocarDenovo = true;
 uint8_t digito = 0;
 char tentativa[6];
+bool fase4Iniciada = false;
+uint8_t passoLed4 = 0;
+bool led4Aceso = false;
+uint32_t instanteLed4 = 0;
 
 // interrupcoes
 volatile bool flag_480s = false;  // flag tempo
@@ -48,6 +57,23 @@ volatile uint16_t contador_ms = 0;
 volatile uint16_t segundos = 0; // timer
 const uint16_t tempo_limite = 480;
 uint16_t tempo_restante = 0;
+
+// Maquina de estados
+enum EstadoJogo
+{
+  INICIO,
+  FASE_1,
+  FASE_2,
+  FASE_3,
+  FASE_4,
+  VITORIA,
+  GAME_OVER
+};
+
+EstadoJogo estadoAtual = INICIO;
+bool telaInicioMostrada = false;
+bool telaVitoriaMostrada = false;
+bool telaGameOverMostrada = false;
 
 // substituindo funções prontas do arduino
 uint32_t meu_millis()
@@ -68,10 +94,10 @@ uint16_t meu_analogRead(uint8_t canal)
   ADMUX = (1 << REFS0) | canal;
 
   // Inicia a conversao
-  ADCSRA |= (1 << ADSC);
+  set_bit(ADCSRA, ADSC);
 
   // Espera a conversao terminar
-  while (ADCSRA & (1 << ADSC))
+  while (tst_bit(ADCSRA, ADSC))
     ;
 
   // Retorna o resultado
@@ -113,7 +139,7 @@ char lerTeclado()
   {
     byte estado = 0xFF;
 
-    estado &= ~(1 << pinosLinhas[i]);
+    clr_bit(estado, pinosLinhas[i]);
 
     escreverPCF(estado);
     delayMicroseconds(100);
@@ -122,7 +148,7 @@ char lerTeclado()
 
     for (int j = 0; j < 3; j++)
     {
-      if (!(leitura & (1 << pinosColunas[j])))
+      if (!tst_bit(leitura, pinosColunas[j]))
       {
         escreverPCF(0xFF);
         return teclas[i][j];
@@ -136,27 +162,27 @@ char lerTeclado()
 
 char lerTeclaNova()
 {
-    static char anterior = '\0';
-    static uint32_t ultimoTempo = 0;
+  static char anterior = '\0';
+  static uint32_t ultimoTempo = 0;
 
-    if (meu_millis() - ultimoTempo < 40) // debouncing do keypad
-    {
-      return '\0';
-    }
+  if (meu_millis() - ultimoTempo < 40) // debouncing do keypad
+  {
+    return '\0';
+  }
 
   char atual = lerTeclado();
   char resultado = '\0';
 
-    if (atual != '\0' && anterior == '\0') // quando aperta a tecla
-    {
-        resultado = atual;
-        ultimoTempo = meu_millis();
-    }
+  if (atual != '\0' && anterior == '\0') // quando aperta a tecla
+  {
+    resultado = atual;
+    ultimoTempo = meu_millis();
+  }
 
-    else if (atual == '\0' && anterior != '\0') // quando solta a tecla
-    {
-      ultimoTempo = meu_millis();
-    }
+  else if (atual == '\0' && anterior != '\0') // quando solta a tecla
+  {
+    ultimoTempo = meu_millis();
+  }
 
   anterior = atual;
 
@@ -166,7 +192,8 @@ char lerTeclaNova()
 // erros
 uint8_t erros = 0;
 
-void registrarErros(){
+void registrarErros()
+{
   erros++;
 }
 
@@ -183,22 +210,21 @@ void registrarErros(){
 #define led_3 PB2 // D10
 #define led_4 PB3 // D11
 
-//sequências
+// sequências
 const uint8_t sequencias[4][4] = {
-  {led_1, led_2, led_3, led_4},
-  {led_4, led_3, led_2, led_1},
-  {led_1, led_3, led_2, led_4},
-  {led_3, led_2, led_4, led_1}
-};
+    {led_1, led_2, led_3, led_4},
+    {led_4, led_3, led_2, led_1},
+    {led_1, led_3, led_2, led_4},
+    {led_3, led_2, led_4, led_1}};
 
 // códigos p/ cada sequência.
 const char codigo_sequencias[4][6] = {
-  {'7','7','3','8','9','4'}, // seq1
-  {'7','7','3','4','9','2'}, // seq2
-  {'7','1','3','8','9','2'}, // seq3
-  {'7','7','8','4','6','2'}};// seq4
- 
+    {'7', '7', '3', '8', '9', '4'},  // seq1
+    {'7', '7', '3', '4', '9', '2'},  // seq2
+    {'7', '1', '3', '8', '9', '2'},  // seq3
+    {'7', '7', '8', '4', '6', '2'}}; // seq4
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 // Definição de variaveis globais fase2 ADC 
@@ -441,16 +467,24 @@ void Sequencia(const uint8_t seq[], uint8_t passos) {
   /* acende e desliga LEDs na ordem da lista */
 >>>>>>> origin/main
   for (uint8_t i = 0; i < passos; i++) {
+=======
+void Sequencia(const uint8_t seq[], uint8_t passos)
+{
+  /* acende e desliga LEDs na ordem da lista */
+  for (uint8_t i = 0; i < passos; i++)
+  {
+>>>>>>> origin/main
     uint8_t atual = seq[i];
 
-    PORTB |= (1 << atual);  // substitui digitalWrite(atual, HIGH)
+    set_bit(PORTB, atual);
     delay(500);
-    PORTB &= ~(1 << atual); // substitui digitalWrite(atual, LOW)
+    clr_bit(PORTB, atual);
     delay(200);
   }
 }
 
-void TocaSequencia () {
+void TocaSequencia()
+{
   Sequencia(sequencias[escolhido2], 4);
 }
 
@@ -481,7 +515,6 @@ ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
   }
 }
 
-
 // setup do tempo atual
 void atualizarTempo()
 {
@@ -491,11 +524,10 @@ void atualizarTempo()
   cli();
 
   tempo_decorrido = segundos;
-  
+
   SREG = estado;
 
   uint32_t tempo_consumido = tempo_decorrido + (erros * 15);
-
 
   if (tempo_consumido >= tempo_limite)
   {
@@ -505,6 +537,76 @@ void atualizarTempo()
   else
   {
     tempo_restante = tempo_limite - tempo_consumido;
+  }
+}
+
+// Auto-explicativa
+void reiniciarJogo()
+{
+  // Para o cronometro
+  TCCR2B = 0;
+
+  // Zera os contadores com seguranca
+  uint8_t estado = SREG;
+  cli();
+
+  TCNT2 = 0;
+  contador_ms = 0;
+  segundos = 0;
+  flag_480s = false;
+  flag_botao = false;
+
+  SREG = estado;
+
+  // Reinicia tempo e erros
+  tempo_restante = tempo_limite;
+  erros = 0;
+
+  // Reinicia a fase 3
+  jogo3_iniciado = false;
+  acao_atual = 0;
+  inicio_estado = 0;
+
+  // Reinicia a fase 4
+  PodeTocarDenovo = true;
+  digito = 0;
+  fase4Iniciada = false;
+  passoLed4 = 0;
+  led4Aceso = false;
+
+  PORTB &= 0b11110000; // Desliga PB0 a PB3
+
+  // Sorteia novos desafios
+  escolhido = random(4, 8);
+  protocolo = random(1, 5);
+  codigo = random(1, 5);
+  condicao_inicial = random(0, 2);
+  escolhido2 = random(0, 4);
+
+  // Reinicia display
+  telaInicioMostrada = false;
+  telaVitoriaMostrada = false;
+  telaGameOverMostrada = false;
+  // Volta para a tela inicial
+  estadoAtual = INICIO;
+
+  Serial.println(F("PARTIDA REINICIADA"));
+}
+
+void verificarReinicio()
+{
+  char comando = '\0';
+
+  if (Serial.available() > 0)
+  {
+    comando = Serial.read();
+  }
+
+  char tecla = lerTeclaNova();
+
+  if (comando == 'R' or comando == 'r' or tecla == '*')
+  {
+    reiniciarJogo();
   }
 }
 
@@ -549,7 +651,7 @@ void mostrarFase3()
   ultimaAtualizacao = agora;
 
   display.clearDisplay();
-  atualizarOLED();  
+  atualizarOLED();
 
   // Protocolo sorteado
   display.setCursor(0, 17);
@@ -703,11 +805,25 @@ void setup()
 
   // config pinos para a fase1
 
-  DDRB |= (1 << led_1) | (1 << led_2) | (1 << led_3) | (1 << led_4); // config dos LEDs
-  PORTB &= ~((1 << led_1) | (1 << led_2) | (1 << led_3) | (1 << led_4));
-  
-  DDRD &= ~((1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)); // config dos switches
-  PORTD |= (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7);
+  set_bit(DDRB, led_1);
+  clr_bit(PORTB, led_1); // Config leds (PB0 até PB3)
+  set_bit(DDRB, led_2);
+  clr_bit(PORTB, led_2);
+  set_bit(DDRB, led_3);
+  clr_bit(PORTB, led_3);
+  set_bit(DDRB, led_4);
+  clr_bit(PORTB, led_4);
+
+  clr_bit(DDRD, botao);
+  set_bit(PORTD, botao); // config botão e switches (PD3 até PD7)
+  clr_bit(DDRD, chave_4);
+  set_bit(PORTD, chave_4);
+  clr_bit(DDRD, chave_5);
+  set_bit(PORTD, chave_5);
+  clr_bit(DDRD, chave_6);
+  set_bit(PORTD, chave_6);
+  clr_bit(DDRD, chave_7);
+  set_bit(PORTD, chave_7);
 
   // setup registradores principais
   cli();
@@ -734,7 +850,7 @@ void setup()
   TCCR2A = (1 << WGM21);
   OCR2A = 249;
   TIMSK2 = (1 << OCIE2A);
-  TCCR2B = (1 << CS22);
+  TCCR2B = 0;
 
   sei();
 }
@@ -769,19 +885,15 @@ void gameover()
   display.display();
 
   Serial.println("Game Over");
-
-  while (1)
-  {
-  }
 }
 
-void loop()
+void executarFase1()
 {
+  static uint32_t ultimaAtualizacao = 0;
 
-  // jogo 1
-
-  while (1)
+  if (meu_millis() - ultimaAtualizacao >= 200)
   {
+<<<<<<< HEAD
     atualizarTempo(); // calcula tempo restante
 
     
@@ -792,38 +904,50 @@ void loop()
     // o jogador com a bomba liga o switch e aperta um botao de confirmacao
 
     // display
+=======
+    ultimaAtualizacao = meu_millis();
+>>>>>>> origin/main
 
     display.clearDisplay();
     atualizarOLED();
 
-    display.setTextSize(1);
-    display.setTextColor(SSD1306_WHITE);
-
     display.setCursor(0, 20);
 
-    // escolhe um códgio diferente p/ cada switch
     switch (escolhido)
     {
     case 4:
       display.println(F("KEY-8B52-O1"));
       break;
+
     case 5:
       display.println(F("KEY-BB52-01"));
       break;
+
     case 6:
       display.println(F("KEY-8B5Z-0l"));
       break;
+
     case 7:
       display.println(F("KEY-B8SZ-Ol"));
       break;
     }
 
     display.display();
+  }
+  if (flag_botao)
+  {
+    flag_botao = false;
 
-    if (flag_botao)
+    // Define qual combinacao de switches esperamos
+    uint8_t esperado = 0b11110000;
+    clr_bit(esperado, escolhido);
+
+    // Verifica os switches
+    if ((PIND & 0b11110000) == esperado)
     {
-      flag_botao = false;
+      Serial.println(F("FASE 1 CONCLUIDA!"));
 
+<<<<<<< HEAD
       Serial.println("BOTAO PRESSIONADO!");
 
       // IA
@@ -847,25 +971,138 @@ void loop()
         Serial.println(erros);
         tone(buzzer, 300, 300);   //botar barulho do buzer aqui: tone(pino, frequencia_Hz, duracao_ms)
       }
+=======
+      estadoAtual = FASE_2;
+>>>>>>> origin/main
     }
-
-    // precisamos manter a checagem da interrupcao e dos erros
-
-    if (erros >= 3)
+    else
     {
-      gameover();
-    }
+      registrarErros();
 
-    if (flag_480s)
-    {
-      gameover();
-      flag_480s = false;
+      Serial.println(F("SWITCH INCORRETO!"));
+      Serial.print(F("Erros: "));
+      Serial.println(erros);
     }
   }
+}
+
+void executarFase4()
+{
+  uint32_t agora = meu_millis();
+
+  // Primeira entrada na fase 4
+  if (!fase4Iniciada)
+  {
+    fase4Iniciada = true;
+
+    passoLed4 = 0;
+    led4Aceso = true;
+    instanteLed4 = agora;
+
+    set_bit(PORTB, sequencias[escolhido2][passoLed4]);
+  }
+
+  // Ainda existem LEDs na sequencia?
+  if (passoLed4 < 4)
+  {
+    // Verifica se o LED ficou ligado por 500 ms
+    if (led4Aceso && agora - instanteLed4 >= 500)
+    {
+      clr_bit(PORTB, sequencias[escolhido2][passoLed4]);
+
+      led4Aceso = false;
+      instanteLed4 = agora;
+    }
+
+    // Verifica se ficou desligado por 200 ms
+    else if (!led4Aceso && agora - instanteLed4 >= 200)
+    {
+      passoLed4++;
+
+      if (passoLed4 < 4)
+      {
+        set_bit(PORTB, sequencias[escolhido2][passoLed4]);
+
+        led4Aceso = true;
+        instanteLed4 = agora;
+      }
+    }
+  }
+  // Sequencia terminou: permite repetir uma vez
+  // A sequência terminou: libera o keypad
+  if (passoLed4 >= 4)
+  {
+    char tecla = lerTeclaNova();
+
+    // Repetir a sequência uma única vez
+    if (tecla == '*' && PodeTocarDenovo)
+    {
+      PodeTocarDenovo = false;
+
+      passoLed4 = 0;
+      led4Aceso = true;
+      instanteLed4 = agora;
+
+      set_bit(PORTB, sequencias[escolhido2][passoLed4]);
+
+      Serial.println(F("REPLAY UTILIZADO!"));
+    }
+
+    // Limpar os dígitos digitados
+    else if (tecla == '#')
+    {
+      digito = 0;
+      Serial.println(F("ENTRADA LIMPA"));
+    }
+
+    // Registrar um dígito de 0 a 9
+    else if (tecla >= '0' && tecla <= '9' && digito < 6)
+    {
+      tentativa[digito] = tecla;
+      digito++;
+
+      Serial.print(F("Digitado: "));
+      Serial.println(tecla);
+
+      // Recebemos os seis dígitos?
+      if (digito == 6)
+      {
+        bool correto = true;
+
+        for (uint8_t i = 0; i < 6; i++)
+        {
+          if (tentativa[i] != codigo_sequencias[escolhido2][i])
+          {
+            correto = false;
+            break;
+          }
+        }
+
+        if (correto)
+        {
+          Serial.println(F("FASE 4 CONCLUIDA!"));
+          estadoAtual = VITORIA;
+        }
+        else
+        {
+          registrarErros();
+          digito = 0;
+
+          Serial.println(F("CODIGO INCORRETO!"));
+          Serial.print(F("Erros: "));
+          Serial.println(erros);
+        }
+      }
+    }
+  }
+  mostrarFase4();
+}
+
+void loopAntigo()
+{
 
   // Fase 3 - Protocolo de Emergencia
 
-  
   while (1)
   {
     atualizarTempo();
@@ -1091,6 +1328,7 @@ void loop()
   }
 //====================================================================
 
+<<<<<<< HEAD
 
 
 // Jogo 2
@@ -1128,18 +1366,20 @@ while (true)
   Serial.println("prox jogo");
   tempo_restante = tempo_limite - segundos;
   
+=======
+>>>>>>> origin/main
   Serial.println(F("prox jogo"));
   atualizarTempo();
   delay(5000);
 
   // game 4
-  /* 
+  /*
   LEDs acendem em uma sequência específica
   Cada sequência corresponde a um código de 6 digitos que precisa ser digitado no Keypad
   O jogador pode tocar a sequência novamente uma única vez.
   Digitar um código de 6 digitos errado conta como 1 erro.
   sequências: (Cores a detrminar)
-      seq1: LED 1, LED 2, LED 3, LED 4 
+      seq1: LED 1, LED 2, LED 3, LED 4
       seq2: LED 4, LED 3, LED 2, LED 1
       seq3: LED 1, LED 3, LED 2, LED 4
       seq4: LED 3, LED 2, LED 4, LED 1
@@ -1159,25 +1399,29 @@ while (true)
 
   TocaSequencia(); // toca a seq. 1 vez
 
-  while(1) 
+  while (1)
   {
 
     atualizarTempo();
     mostrarFase4();
-    
-    if (erros >= 3 || flag_480s) {
-    gameover();
+
+    if (erros >= 3 || flag_480s)
+    {
+      gameover();
     }
     char tecla = lerTeclaNova();
 
-    if (tecla != '\0') 
+    if (tecla != '\0')
     {
-      if (tecla == '*') 
+      if (tecla == '*')
       {
-        if (PodeTocarDenovo) 
+        if (PodeTocarDenovo)
         {
           TocaSequencia();
           PodeTocarDenovo = false;
+          display.println(F("Replay usado")); // testar como fica no display
+          display.display();
+          Serial.println(F("Replay usado"));
         }
       }
       else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
@@ -1192,32 +1436,199 @@ while (true)
         digito++;
         Serial.print(F("Digitado: "));
         Serial.println(tecla);
-        }
+      }
     }
     if (digito >= 6)
+    {
+      bool correto = true;
+      for (uint8_t i = 0; i < 6; i++)
       {
-        bool correto = true;
-        for (uint8_t i = 0; i < 6; i++)
+        if (tentativa[i] != codigo_sequencias[escolhido2][i])
         {
-          if (tentativa[i] != codigo_sequencias[escolhido2][i])
-          {
-            correto = false;
-            break;
-          }
-        }
-        if (correto)
-        {
-          Serial.println(F("Sequencia correta. Jogo Encerrado")); // 
+          correto = false;
           break;
         }
-        else
-        {
-          Serial.println(F("Codigo Incorreto"));
-          registrarErros();
-          Serial.println(erros);
-          digito = 0;
-        }
       }
+      if (correto)
+      {
+        Serial.println(F("Sequencia correta. Jogo Encerrado")); //
+        break;
+      }
+      else
+      {
+        Serial.println(F("Codigo Incorreto"));
+        registrarErros();
+        Serial.println(erros);
+        digito = 0;
+      }
+    }
   }
-  while (1){} // pausa o jogo pra ele não resetar automaticamente
+  while (1)
+  {
+  } // pausa o jogo pra ele não resetar automaticamente
+}
+
+void loop()
+{
+
+  if (estadoAtual != INICIO &&
+      estadoAtual != VITORIA &&
+      estadoAtual != GAME_OVER)
+  {
+    atualizarTempo();
+
+    if (erros >= 3 or flag_480s)
+    {
+      estadoAtual = GAME_OVER;
+    }
+  }
+
+  switch (estadoAtual)
+  {
+  case INICIO:
+  {
+
+    // Tela inicial e comando para começar
+
+    if (!telaInicioMostrada)
+    {
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+
+      display.setCursor(37, 1);
+      display.println(F("BOMB GAME"));
+
+      display.setCursor(43, 12);
+      display.println(F("Made by"));
+
+      display.setCursor(16, 23);
+      display.println(F("Leonardo, Xavier"));
+
+      display.setCursor(37, 33);
+      display.println(F("& Matheus"));
+
+      display.setCursor(7, 45);
+      display.println(F("Escolham as funcoes"));
+
+      display.setCursor(22, 55);
+      display.println(F("# PARA INICIAR"));
+
+      display.display();
+
+      telaInicioMostrada = true;
+    }
+
+    char tecla = lerTeclaNova();
+
+    if (tecla == '#')
+    {
+      TCNT2 = 0;
+      contador_ms = 0;
+      segundos = 0;
+      erros = 0;
+      flag_480s = false;
+      flag_botao = false;
+
+      TCCR2B = (1 << CS22);
+
+      estadoAtual = FASE_4; // Temporario para teste
+
+      Serial.println(F("JOGO INICIADO!"));
+    }
+
+    break;
+  }
+
+  case FASE_1:
+    // Executar fase 1
+    executarFase1();
+    break;
+
+  case FASE_2:
+    // Executar fase 2
+    break;
+
+  case FASE_3:
+    // Executar fase 3
+    break;
+
+  case FASE_4:
+    // Executar fase 4
+    executarFase4();
+    break;
+
+  case VITORIA:
+  {
+
+    if (!telaVitoriaMostrada)
+    {
+      TCCR2B = 0; // Para o cronometro
+
+      atualizarTempo();
+
+      display.clearDisplay();
+      atualizarOLED();
+
+      display.setCursor(15, 22);
+      display.println(F("BOMBA DESARMADA!"));
+
+      display.setCursor(15, 36);
+      display.println(F("VOCES VENCERAM!"));
+
+      display.setCursor(0, 52);
+      display.println(F("R:Serial *:Keypad"));
+
+      display.display();
+
+      Serial.println(F("VITORIA!"));
+
+      telaVitoriaMostrada = true;
+    }
+
+    verificarReinicio();
+
+    break;
+  }
+  case GAME_OVER:
+  {
+
+    if (!telaGameOverMostrada)
+    {
+      TCCR2B = 0;          // Para o cronometro
+      PORTB &= 0b11110000; // Desliga os 4 LEDs
+      atualizarTempo();
+
+      display.clearDisplay();
+      atualizarOLED();
+
+      display.setCursor(0, 20);
+      display.println(F("GAME OVER"));
+
+      display.setCursor(0, 34);
+
+      if (erros >= 3)
+      {
+        display.println(F("3 erros cometidos"));
+      }
+      else if (flag_480s)
+      {
+        display.println(F("Tempo esgotado"));
+      }
+
+      display.setCursor(0, 50);
+      display.println(F("R:Serial *:Keypad"));
+
+      display.display();
+
+      Serial.println(F("Game Over"));
+
+      telaGameOverMostrada = true;
+    }
+
+    verificarReinicio();
+
+    break;
+  }
+  }
 }
