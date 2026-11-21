@@ -188,7 +188,173 @@ void registrarErros(){
 #define led_3 PB2 // D10
 #define led_4 PB4 // D12
 
-#define buzzer PB4 //D11 (Buzzer precisa ser D3, D5, D6, D9, D10 ou D11 pra poder usar o timer)
+// -------- config buzzer -------
+#define buzzer_pino PB3 // D11
+
+volatile uint8_t buzzer_divisor = 0; // 0 = desligado, 1 = 500Hz, 2 = 250Hz, 3 = 167Hz
+volatile uint8_t buzzer_contador = 0; // contador (p/ div de freq)
+
+// Cada som corresponde ao número da linha nas matrizes abaixo (0 a 3)
+enum sons_buzzer
+{
+  erro = 0,
+  Alerta = 1,
+  Vitoria = 2,
+  Game_Over = 3,
+  Silencio = 4
+};
+
+// Frequências em Hz de cada nota
+const uint16_t melodias_frequencias[4][5] = {
+  {250,   0, 167,   0,   0}, // linha 0: erro
+  {500,   0,   0,   0,   0}, // linha 1: Alerta
+  {250,   0, 500,   0, 500}, // linha 2: Vitoria
+  {500,   0, 250,   0, 167}  // linha 3: Game_Over
+};
+
+// Duração em ms de cada nota
+const uint16_t melodias_duracao[4][5] = {
+  {140,  50, 250,   0,   0}, // linha 0: erro
+  { 80,   0,   0,   0,   0}, // linha 1: Alerta
+  {100,  40, 100,  40, 260}, // linha 2: Vitoria
+  {180,  50, 180,  50, 450}  // linha 3: Game_Over
+};
+
+// Quantos passos válidos cada melodia tem
+const uint8_t melodias_tamanhos[4] = {3, 1, 5, 5};
+
+// Variáveis de controle do buzzer
+sons_buzzer som_atual = Silencio; // começa em silencio
+uint8_t indice_nota = 0; //qual "passo" a nota esta
+uint32_t inicio_nota = 0; // tempo q a nota começou a tocar
+bool som_prioridade = false; // se o som tem prioridade (em relação a Alerta)
+
+void buzzerTick() //'tick' do buzzer (para a gerar frequencia do som)
+{
+  if (buzzer_divisor > 0)
+  {
+    buzzer_contador++;
+    if (buzzer_contador >= buzzer_divisor)
+    {
+      buzzer_contador = 0;
+      cpl_bit(PORTB, buzzer_pino);
+    }
+  }
+}
+
+void buzzerDesligar()
+{
+  buzzer_divisor = 0;
+  buzzer_contador = 0;
+  clr_bit(PORTB, buzzer_pino);
+}
+
+void buzzerInicializar()
+{
+  set_bit(DDRB, buzzer_pino);
+  buzzerDesligar();
+}
+
+void buzzerLigar(uint16_t freq)
+{
+  if (freq == 0)
+  {
+    buzzerDesligar();
+    return;
+  }
+
+  uint8_t div;
+  if (freq >= 375)
+  {
+    div = 1; // 500 Hz
+  }
+  else if (freq >= 200)
+  {
+    div = 2; // 250 Hz
+  }
+  else
+  {
+    div = 3; // 167 Hz
+  }
+
+  buzzer_divisor = 0;
+  buzzer_contador = 0;
+  buzzer_divisor = div;
+}
+
+void pararSom()
+{
+  buzzerDesligar();
+  som_atual = Silencio;
+  indice_nota = 0;
+  som_prioridade = false;
+}
+
+void tocarSom(sons_buzzer som)
+{
+  if (som >= Silencio)
+  {
+    pararSom();
+    return;
+  }
+
+  // Não interrompe erro, vitória ou game over com o bipe de tempo
+  if (som == Alerta && som_prioridade)
+  {
+    return;
+  }
+
+  som_atual = som;
+  som_prioridade = (som != Alerta);
+  indice_nota = 0;
+  inicio_nota = meu_millis();
+  buzzerLigar(melodias_frequencias[som_atual][0]);
+}
+
+void atualizarBuzzer(bool jogo_ativo, uint16_t tempo_restante)
+{
+  uint32_t agora = meu_millis();
+
+  // 1. Avança as notas da melodia atual sem bloquear
+  if (som_atual != Silencio)
+  {
+    if (agora - inicio_nota >= melodias_duracao[som_atual][indice_nota])
+    {
+      indice_nota++;
+      if (indice_nota >= melodias_tamanhos[som_atual])
+      {
+        pararSom();
+      }
+      else
+      {
+        inicio_nota = agora;
+        buzzerLigar(melodias_frequencias[som_atual][indice_nota]);
+      }
+    }
+  }
+
+  // 2. Aviso sonoro quando o tempo está acabando
+  static uint32_t ultimo_alerta = 0;
+  if (jogo_ativo && tempo_restante > 0 && tempo_restante <= 60)
+  {
+    uint16_t intervalo;
+    if (tempo_restante <= 15)
+    {
+      intervalo = 500;
+    }
+    else
+    {
+      intervalo = 1000;
+    }
+
+    if (agora - ultimo_alerta >= intervalo)
+    {
+      ultimo_alerta = agora;
+      tocarSom(Alerta);
+    }
+  }
+}
+// -------- fim config buzzer -------
 
 //sequências
 const uint8_t sequencias[4][4] = {
@@ -470,10 +636,7 @@ void setup()
   clr_bit(DDRD, chave_7); set_bit(PORTD, chave_7);
 
   //config do buzzer
-  set_bit(DDRB, buzzer);
-  clr_bit(PORTB, buzzer); // Garante nivel LOW (silencio) quando OC1A for desconectado
-  clr_bit(TCCR1A, COM1A0);    // Comeca com o som desligado
-  // setup registradores principais
+  buzzerInicializar();
   cli();
 
   // setup interrupcao
