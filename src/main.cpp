@@ -340,8 +340,8 @@ void gameover()
 {
   flag_480s = false;
   TCCR2B = 0; /* timer parado */
-  Serial.println("Game Over");
-  Serial.println("Faça tal para reiniciar o jogo");
+  Serial.println(F("Game Over"));
+  Serial.println(F("Faça tal para reiniciar o jogo"));
   while (1)
   {
   }
@@ -352,7 +352,7 @@ void loop()
 
   // jogo 1
 
-  /*   while (1)
+    while (1)
   {
 
     // os switches disponiveis sao os switches 1 a 4
@@ -393,7 +393,7 @@ void loop()
     {
       flag_botao = false;
 
-      Serial.println("BOTAO PRESSIONADO!");
+      Serial.println(F("BOTAO PRESSIONADO!)");
 
       // IA
 
@@ -406,7 +406,7 @@ void loop()
       // Verifica se somente o switch sorteado está ligado
       if ((PIND & 0b11110000) == esperado)
       {
-        Serial.println("SWITCH CORRETO!");
+        Serial.println(F("SWITCH CORRETO!"));
         break;
       }
 
@@ -430,11 +430,11 @@ void loop()
       gameover();
       flag_480s = false;
     }
-  } */
+  }
 
   // Fase 3 - Protocolo de Emergencia
 
-  /*
+  
   while (1)
   {
 
@@ -455,7 +455,7 @@ void loop()
         claro_antes = (meu_analogRead(ldr) < limite_luz);
         inicio_estado = meu_millis();
 
-        Serial.println("FASE 3 INICIADA!");
+        Serial.println(F("FASE 3 INICIADA!"));
       }
     }
 
@@ -535,7 +535,7 @@ void loop()
 
         if (duracao_estado >= acao1 && claro == estadoAcao1)
         {
-          Serial.println("Acao 1 concluida");
+          Serial.println(F("Acao 1 concluida"));
           break;
         }
 
@@ -563,7 +563,7 @@ void loop()
         tecla = lerTeclaNova();
         if (tecla == numero + '0')
         {
-          Serial.println("Acao 2 completa");
+          Serial.println(F("Acao 2 completa"));
 
           inicio_estado = meu_millis();
           claro_antes = (meu_analogRead(ldr) < limite_luz);
@@ -601,7 +601,7 @@ void loop()
 
         if (duracao_estado >= acao3 && claro == estadoAcao3)
         {
-          Serial.println("Acao 3 concluida");
+          Serial.println(("Acao 3 concluida"));
           break;
         }
 
@@ -623,16 +623,16 @@ void loop()
         }
         delay(20);
       }
-      Serial.println("FASE 3 CONCLUIDA!");
+      Serial.println(F("FASE 3 CONCLUIDA!"));
       break;
     }
   }
 
   
-  Serial.println("prox jogo");
+  Serial.println(F("prox jogo"));
   tempo_restante = tempo_limite - segundos;
   delay(5000);
-*/
+
   // game 4
   /* 
   LEDs acendem em uma sequência específica
@@ -678,7 +678,7 @@ void loop()
           PodeTocarDenovo = false;
           display.println(F("Replay usado")); //testar como fica no display
           display.display();
-          Serial.println("Replay usado");
+          Serial.println(F("Replay usado"));
         }
       }
       else if (tecla == '#') // limpar a tentativa (caso aperte uma tecla sem querer)
