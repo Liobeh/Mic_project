@@ -37,6 +37,35 @@ bool PodeTocarDenovo = true;
 uint8_t digito = 0;
 char tentativa[6];
 
+// substituindo funções prontas do arduino
+uint32_t meu_millis()
+{
+  uint8_t estado = SREG;
+  cli();
+
+  uint32_t tempo = ms;
+
+  SREG = estado;
+  return tempo;
+}
+
+// Leitura de um canal analogico, material da prof
+uint16_t meu_analogRead(uint8_t canal)
+{
+
+  ADMUX = (1 << REFS0) | canal;
+
+  // Inicia a conversao
+  ADCSRA |= (1 << ADSC);
+
+  // Espera a conversao terminar
+  while (ADCSRA & (1 << ADSC))
+    ;
+
+  // Retorna o resultado
+  return ADC;
+}
+
 // Keypad 4x3 conectado ao PCF8574T via I2C
 #define PCF 0x27
 
@@ -182,23 +211,6 @@ void TocaSequencia () {
   Sequencia(sequencias[escolhido2], 4);
 }
 
-// Leitura de um canal analogico, material da prof
-uint16_t meu_analogRead(uint8_t canal)
-{
-
-  ADMUX = (1 << REFS0) | canal;
-
-  // Inicia a conversao
-  ADCSRA |= (1 << ADSC);
-
-  // Espera a conversao terminar
-  while (ADCSRA & (1 << ADSC))
-    ;
-
-  // Retorna o resultado
-  return ADC;
-}
-
 // rotina de interrupcao do botao
 ISR(INT1_vect)
 {
@@ -226,16 +238,6 @@ ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
   }
 }
 
-uint32_t meu_millis()
-{
-  uint8_t estado = SREG;
-  cli();
-
-  uint32_t tempo = ms;
-
-  SREG = estado;
-  return tempo;
-}
 
 void setup()
 {
