@@ -1067,7 +1067,7 @@ void loop()
 
   case FASE_3:
     // Executar fase 3
-    erros = 3;  
+    erros++;
     break;
 
   case FASE_4:
