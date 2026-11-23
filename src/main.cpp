@@ -1122,9 +1122,9 @@ void executarFase2()
     Serial.println(F("FASE 2 CONCLUIDA!"));
 
     // Desliga os LEDs da fase 2
-    clr_bit(PORTB, PB0);
-    clr_bit(PORTB, PB1);
-    clr_bit(PORTB, PB2);
+    clr_bit(PORTB, led_1);
+    clr_bit(PORTB, led_2);
+    clr_bit(PORTB, led_3);
 
     // Avanca para a fase 3
     estadoAtual = FASE_3;
@@ -1138,9 +1138,9 @@ void executarFase2()
     // Verifica se o jogador perdeu o jogo
     if (erros >= 3 || flag_480s)
     {
-      clr_bit(PORTB, PB0); // D9
-      clr_bit(PORTB, PB1); // D10
-      clr_bit(PORTB, PB2); // D12
+      clr_bit(PORTB, led_1); // D8
+      clr_bit(PORTB, led_2); // D9
+      clr_bit(PORTB, led_3); // D10
 
       estadoAtual = GAME_OVER;
       return;
@@ -1348,7 +1348,6 @@ void executarFase4()
     led4Aceso = true;
     instanteLed4 = agora;
 
-    delay(2000); // Espera 2 segundos antes de mostrar a sequencia
     set_bit(PORTB, sequencias[escolhido2][passoLed4]);
   }
 
