@@ -1,6 +1,7 @@
 // Libraries
 #include <Arduino.h>
 #include <stdlib.h>
+#include <avr/pgmspace.h> // p/ mandar coisa pra mem flash
 
 // Bibliotecas p/ tela
 #include <Wire.h>
@@ -220,7 +221,7 @@ enum sons_buzzer
 };
 
 // Frequências em Hz de cada nota
-const uint16_t melodias_frequencias[4][5] = {
+const uint16_t melodias_frequencias[4][5] PROGMEM = {
   {250,   0, 167,   0,   0}, // linha 0: erro
   {500,   0,   0,   0,   0}, // linha 1: Alerta
   {250,   0, 500,   0, 500}, // linha 2: Vitoria
@@ -228,7 +229,7 @@ const uint16_t melodias_frequencias[4][5] = {
 };
 
 // Duração em ms de cada nota
-const uint16_t melodias_duracao[4][5] = {
+const uint16_t melodias_duracao[4][5] PROGMEM = {
   {140,  50, 250,   0,   0}, // linha 0: erro
   { 80,   0,   0,   0,   0}, // linha 1: Alerta
   {100,  40, 100,  40, 260}, // linha 2: Vitoria
@@ -236,7 +237,7 @@ const uint16_t melodias_duracao[4][5] = {
 };
 
 // Quantos passos válidos cada melodia tem
-const uint8_t melodias_tamanhos[4] = {3, 1, 5, 5};
+const uint8_t melodias_tamanhos[4] PROGMEM = {3, 1, 5, 5};
 
 // Variáveis de controle do buzzer
 sons_buzzer som_atual = Silencio; // começa em silencio
@@ -323,7 +324,7 @@ void tocarSom(sons_buzzer som)
   som_prioridade = (som != Alerta);
   indice_nota = 0;
   inicio_nota = meu_millis();
-  buzzerLigar(melodias_frequencias[som_atual][0]);
+  buzzerLigar(pgm_read_word(&melodias_frequencias[som_atual][0]));
 }
 
 void atualizarBuzzer(bool jogo_ativo, uint16_t tempo_restante)
@@ -333,17 +334,17 @@ void atualizarBuzzer(bool jogo_ativo, uint16_t tempo_restante)
   // 1. Avança as notas da melodia atual sem bloquear
   if (som_atual != Silencio)
   {
-    if (agora - inicio_nota >= melodias_duracao[som_atual][indice_nota])
+    if (agora - inicio_nota >= pgm_read_word(&melodias_duracao[som_atual][indice_nota]))
     {
       indice_nota++;
-      if (indice_nota >= melodias_tamanhos[som_atual])
+      if (indice_nota >= pgm_read_byte(&melodias_tamanhos[som_atual]))
       {
         pararSom();
       }
       else
       {
         inicio_nota = agora;
-        buzzerLigar(melodias_frequencias[som_atual][indice_nota]);
+        buzzerLigar(pgm_read_word(&melodias_frequencias[som_atual][indice_nota]));
       }
     }
   }
@@ -767,18 +768,18 @@ void atualizarOLED()
   uint8_t segundos_restantes = tempo_restante % 60;
 
   display.setCursor(0, 0);
-  display.print("Tempo: ");
+  display.print(F("Tempo: "));
   display.print(minutos);
-  display.print(":");
+  display.print(':');
 
   if (segundos_restantes < 10)
   {
-    display.print("0");
+    display.print('0');
   }
 
   display.print(segundos_restantes);
   display.setCursor(88, 0);
-  display.print("E:");
+  display.print(F("E:"));
   display.print(erros);
 
   display.drawLine(0, 12, 127, 12, SSD1306_WHITE);
@@ -986,23 +987,23 @@ void setup()
   // Usa ADC0 como semente para o sorteio
   randomSeed(meu_analogRead(0));
   escolhido = random(4, 8);
-  Serial.print("Switch sorteado: ");
+  Serial.print(F("Switch sorteado: "));
   Serial.println(escolhido);
 
   protocolo = random(1, 5);
-  Serial.print("Protocolo sorteado: ");
+  Serial.print(F("Protocolo sorteado: "));
   Serial.println(protocolo);
 
   codigo = random(1, 5);
-  Serial.print("Codio sorteado: ");
+  Serial.print(F("Codio sorteado: "));
   Serial.println(codigo);
 
   condicao_inicial = random(0, 2);
-  Serial.print("Condicao inicial sorteada: ");
+  Serial.print(F("Condicao inicial sorteada: "));
   Serial.println(condicao_inicial);
 
   escolhido2 = random(0, 4);
-  Serial.print("Sequencia sorteada: ");
+  Serial.print(F("Sequencia sorteada: "));
   Serial.println(escolhido2);
 
   // config pinos para a fase1
