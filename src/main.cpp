@@ -679,6 +679,7 @@ void reiniciarJogo()
 {
   // Para o cronometro
   TCCR2B = 0;
+  pararSom();
 
   // Zera os contadores com seguranca
   uint8_t estado = SREG;
@@ -1445,6 +1446,9 @@ void executarFase4()
 
 void loop()
 {
+  bool jogo_ativo = (estadoAtual != INICIO &&
+                     estadoAtual != VITORIA &&
+                     estadoAtual != GAME_OVER);
 
   if (estadoAtual != INICIO &&
       estadoAtual != VITORIA &&
@@ -1457,6 +1461,8 @@ void loop()
       estadoAtual = GAME_OVER;
     }
   }
+
+  atualizarBuzzer(jogo_ativo, tempo_restante);
 
   switch (estadoAtual)
   {
@@ -1559,6 +1565,7 @@ void loop()
       display.display();
 
       Serial.println(F("VITORIA!"));
+      tocarSom(Vitoria);
 
       telaVitoriaMostrada = true;
     }
@@ -1600,6 +1607,7 @@ void loop()
       display.display();
 
       Serial.println(F("Game Over"));
+      tocarSom(Game_Over);
 
       telaGameOverMostrada = true;
     }
