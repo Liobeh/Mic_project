@@ -395,13 +395,6 @@ const char codigo_sequencias[4][6] = {
 
 // Definição de variaveis globais fase2 ADC
 //================================
-// definindo componentes
-int LeD_amarelo = 9;
-int LeD_azul = 10;
-int LeD_verde = 12;
-int Potenciometro_1 = A2;
-int Potenciometro_2 = A3;
-int buzzer = 11;
 
 bool fase2Iniciada = false;
 
@@ -419,7 +412,7 @@ const int condicao_leds[4][3] = {
 };
 int configuracao_led_anterior = -1;
 int pisca = HIGH;
-int vetor_Leds[3] = {PB1, PB2, PB4}; // amarelo, azul, verde
+const uint8_t vetor_Leds[3] = {led_2, led_3, led_4}; // amarelo, azul, verde
 unsigned long tempo_pisca = 300;
 unsigned long ultima_troca = 0;
 
