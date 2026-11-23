@@ -412,7 +412,7 @@ const int condicao_leds[4][3] = {
 };
 int configuracao_led_anterior = -1;
 int pisca = HIGH;
-const uint8_t vetor_Leds[3] = {led_2, led_3, led_4}; // amarelo, azul, verde
+const uint8_t vetor_Leds[3] = {led_1, led_2, led_3}; // amarelo, azul, verde
 unsigned long tempo_pisca = 300;
 unsigned long ultima_troca = 0;
 
