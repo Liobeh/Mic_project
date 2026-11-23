@@ -395,13 +395,6 @@ const char codigo_sequencias[4][6] = {
 
 // Definição de variaveis globais fase2 ADC
 //================================
-// definindo componentes
-int LeD_amarelo = 9;
-int LeD_azul = 10;
-int LeD_verde = 12;
-int Potenciometro_1 = A2;
-int Potenciometro_2 = A3;
-int buzzer = 11;
 
 bool fase2Iniciada = false;
 
@@ -419,7 +412,7 @@ const int condicao_leds[4][3] = {
 };
 int configuracao_led_anterior = -1;
 int pisca = HIGH;
-int vetor_Leds[3] = {PB1, PB2, PB4}; // amarelo, azul, verde
+const uint8_t vetor_Leds[3] = {led_2, led_3, led_4}; // amarelo, azul, verde
 unsigned long tempo_pisca = 300;
 unsigned long ultima_troca = 0;
 
@@ -526,12 +519,14 @@ int confirmar_posicao(int indice_pot)
   // Verifica se o potenciometro mudou de posicao
   if (posicao_pot_lida[indice_pot] != posicao_anterior[indice_pot])
   {
-    posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
-    momento_chegada[indice_pot] = meu_millis();
+  if (posicao_anterior[indice_pot] != nenhuma) // verifica se não é a primeira leitura do potenciometro
+  {
+    momento_chegada[indice_pot] = meu_millis(); 
   }
-
+  posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
+  } 
   // Verifica se permaneceu na posicao pelo tempo necessario
-  if (meu_millis() - momento_chegada[indice_pot] >= tempo_segurar)
+  if (meu_millis() - momento_chegada[indice_pot] >= tempo_segurar && momento_chegada[indice_pot] != 0)
   {
     return posicao_pot_lida[indice_pot];
   }
@@ -1127,9 +1122,9 @@ void executarFase2()
     Serial.println(F("FASE 2 CONCLUIDA!"));
 
     // Desliga os LEDs da fase 2
+    clr_bit(PORTB, PB0);
     clr_bit(PORTB, PB1);
     clr_bit(PORTB, PB2);
-    clr_bit(PORTB, PB4);
 
     // Avanca para a fase 3
     estadoAtual = FASE_3;
@@ -1143,9 +1138,9 @@ void executarFase2()
     // Verifica se o jogador perdeu o jogo
     if (erros >= 3 || flag_480s)
     {
-      clr_bit(PORTB, PB1); // D9
-      clr_bit(PORTB, PB2); // D10
-      clr_bit(PORTB, PB4); // D12
+      clr_bit(PORTB, PB0); // D9
+      clr_bit(PORTB, PB1); // D10
+      clr_bit(PORTB, PB2); // D12
 
       estadoAtual = GAME_OVER;
       return;
