@@ -526,12 +526,14 @@ int confirmar_posicao(int indice_pot)
   // Verifica se o potenciometro mudou de posicao
   if (posicao_pot_lida[indice_pot] != posicao_anterior[indice_pot])
   {
+    if (posicao_anterior[indice_pot] != nenhuma)
+    {
+      momento_chegada[indice_pot] = meu_millis();
+    }
     posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
-    momento_chegada[indice_pot] = meu_millis();
   }
 
-  // Verifica se permaneceu na posicao pelo tempo necessario
-  if (meu_millis() - momento_chegada[indice_pot] >= tempo_segurar)
+  if (meu_millis() - momento_chegada[indice_pot] >= tempo_segurar && momento_chegada[indice_pot] != 0)
   {
     return posicao_pot_lida[indice_pot];
   }
