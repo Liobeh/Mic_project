@@ -1070,10 +1070,18 @@ void setup()
 void executarFase1()
 {
   mostrarFase1();
+  static uint32_t ultimoTempo = 0;
 
   if (flag_botao)
   {
     flag_botao = false;
+
+    uint32_t agora = meu_millis();
+    if (agora - ultimoTempo < 40) // debouncing do botao
+    {
+      return;
+    }
+    ultimoTempo = agora; // Start cooldown from this valid press
 
     // Define qual combinacao de switches esperamos
     uint8_t esperado = 0b11110000;
