@@ -4,17 +4,17 @@ Jogo interativo de **desarmamento de uma bomba fictícia**, desenvolvido como pr
 
 O projeto foi programado em **C/C++**, utilizando **Visual Studio Code + PlatformIO**, e explora conceitos como acesso direto aos registradores do microcontrolador, interrupções, temporizadores, conversão analógico-digital e comunicação I²C.
 
-> **Status:** protótipo montado e fases integradas. O código ainda está em revisão final; alguns detalhes podem ser atualizados após os últimos testes.
+> **Status:** protótipo montado, com as quatro fases integradas.
 
 ## Montagem do protótipo
 
 **Visão geral do protótipo:** Arduino Uno conectado às duas protoboards, OLED, teclado, potenciômetros, chaves e demais componentes.
 
-![Visão geral da montagem física do Bomb Game](tutorial/imagens/montagem-geral.jpg)
+![Visão geral da montagem física do Bomb Game](Tutorial/imagens/montagem-geral.jpg)
 
 **Detalhe do circuito:** conexões do Arduino Uno, buzzer, chaves e LEDs.
 
-![Detalhe das conexões do Arduino Uno no Bomb Game](tutorial/imagens/detalhe-conexoes-arduino.jpg)
+![Detalhe das conexões do Arduino Uno no Bomb Game](Tutorial/imagens/detalhe-conexoes-arduino.jpg)
 
 As fotos registram a montagem do protótipo em protoboards. Para reproduzi-la, consulte também a tabela de conexões abaixo: as imagens não substituem um esquema elétrico completo.
 
@@ -42,11 +42,17 @@ A proposta é que um **operador**, responsável pelo circuito, siga as orientaç
 
 O **Manual de Desarmamento** contém as instruções que o especialista utiliza para orientar o operador durante as quatro fases. O README documenta a montagem, o funcionamento e a implementação técnica do projeto; o manual reúne as regras necessárias para resolver os desafios.
 
-- 📖 **[Consultar o Manual de Desarmamento (PDF)](tutorial/Manual_Bomb_Game.pdf)** — versão para leitura e impressão.
-- 📝 **[Baixar o Manual de Desarmamento (Word)](tutorial/Manual_Bomb_Game.docx)** — versão editável.
+- 📖 **[Consultar o Manual de Desarmamento (PDF)](Tutorial/Manual_Bomb_Game.pdf)** — versão para leitura e impressão.
+- 📝 **[Baixar o Manual de Desarmamento (Word)](Tutorial/Manual_Bomb_Game.docx)** — versão editável.
 
-Ambos os arquivos estão disponíveis na pasta `tutorial/`.
+Ambos os arquivos estão disponíveis na pasta `Tutorial/`.
 
+
+## Fluxograma e diagrama de estados
+
+O fluxograma detalha a máquina de estados e o funcionamento das quatro fases, incluindo decisões, tratamento de erros e condições de encerramento.
+
+- **[Consultar o fluxograma do Bomb Game (PDF)](Tutorial/Fluxograma_Bomb_Game.pdf)** — diagrama geral e fluxogramas individuais dos módulos.
 
 ## Componentes utilizados
 
@@ -70,20 +76,20 @@ Ambos os arquivos estão disponíveis na pasta `tutorial/`.
 
 | Pino do Arduino | Conexão | Observações |
 | --- | --- | --- |
-| **D3** | Botão de confirmação | Interrupção externa `INT1`; entrada com pull-up interno |
+| **D3** | Botão de confirmação | Interrupção externa `INT1`, acionada na borda de descida; entrada com pull-up interno |
 | **D4–D7** | Quatro chaves | Entradas digitais com pull-up interno |
-| **D8** | LED 1 da fase 4 | `PB0` |
-| **D9** | LED 2 da fase 4 / LED amarelo da fase 2 | `PB1` |
-| **D10** | LED 3 da fase 4 / LED azul da fase 2 | `PB2` |
+| **D8** | LED 1 da fase 4 / LED amarelo da fase 2 | `PB0` |
+| **D9** | LED 2 da fase 4 / LED azul da fase 2 | `PB1` |
+| **D10** | LED 3 da fase 4 / LED verde da fase 2 | `PB2` |
 | **D11** | Buzzer | `PB3` |
-| **D12** | LED 4 da fase 4 / LED verde da fase 2 | `PB4` |
+| **D12** | LED 4 da fase 4 (segundo verde) | `PB4` |
 | **A1** | LDR | Canal ADC1; resistor de 10 kΩ no circuito de leitura |
 | **A2** | Potenciômetro 1 | Canal ADC2 |
 | **A3** | Potenciômetro 2 | Canal ADC3 |
 | **A4 (SDA)** | Barramento I²C | Compartilhado pelo OLED e PCF8574T |
 | **A5 (SCL)** | Barramento I²C | Compartilhado pelo OLED e PCF8574T |
 
-**Importante:** os LEDs das fases 2 e 4 compartilham os pinos **D9, D10 e D12**; o LED de D8 é usado na fase 4. Conecte todos os módulos ao GND comum e respeite a alimentação e a polaridade dos componentes. Confira os valores e a posição dos resistores antes de energizar a montagem.
+**Importante:** os LEDs das fases 2 e 4 compartilham os pinos **D8 (amarelo), D9 (azul) e D10 (verde)**. A fase 4 utiliza adicionalmente o LED **D12 (segundo verde)**. Conecte todos os módulos ao GND comum e respeite a alimentação e a polaridade dos componentes. Confira os valores e a posição dos resistores antes de energizar a montagem.
 
 ### Dispositivos I²C e teclado
 
@@ -114,13 +120,11 @@ Principais recursos implementados:
 
 - **Timer1**, configurado para interrupções periódicas de 1 ms, utilizado pela contagem personalizada `meu_millis()` e pela geração do sinal do buzzer.
 - **Timer2**, utilizado na contagem regressiva de 480 segundos.
-- **Interrupção externa INT1**, acionada pelo botão de confirmação da primeira fase.
+- **Interrupção externa INT1**, acionada na **borda de descida** pelo botão de confirmação da primeira fase, com entrada em pull-up.
 - **ADC**, utilizado para ler o LDR e os dois potenciômetros por meio de `meu_analogRead()`.
 - **I²C (`Wire`)**, utilizado para controlar o display OLED e o expansor PCF8574T.
 - **Acesso direto a registradores**, incluindo `DDRx`, `PORTx`, `PINx`, `ADCSRA` e registradores de temporizadores/interrupções.
 - **Controle de estados e temporização**, utilizando contadores, flags, validação de tempo e atualização periódica do display.
-
-**Nota de desenvolvimento:** a maior parte das etapas utiliza temporização por contadores, mas a versão de código analisada ainda contém uma espera de 2 segundos com `delay()` na entrada da fase 4. Esse comportamento deverá ser reavaliado na revisão final.
 
 ## Como compilar e executar
 
@@ -143,10 +147,9 @@ monitor_speed = 9600
 lib_deps =
   adafruit/Adafruit GFX Library @ ^1.11.9
   adafruit/Adafruit SSD1306 @ ^2.5.9
-  Keypad
 ```
 
-A biblioteca `Keypad` permanece declarada na configuração, embora a versão atual do `main.cpp` faça a leitura do teclado diretamente pelo PCF8574T.
+**Bibliotecas prontas utilizadas:** `Wire` (comunicação I²C, fornecida pelo framework Arduino), `Adafruit GFX` (rotinas gráficas) e `Adafruit SSD1306` (controle do display OLED). A leitura do teclado matricial utiliza funções próprias que se comunicam com o PCF8574T via `Wire`.
 
 ### Execução
 
@@ -169,21 +172,47 @@ A biblioteca `Keypad` permanece declarada na configuração, embora a versão at
 | `*` após vitória ou derrota | Reiniciar o jogo |
 | `R` ou `r` no Serial Monitor após vitória ou derrota | Reiniciar o jogo |
 
+## Comunicação serial (UART)
+
+A comunicação serial permite acompanhar mensagens de depuração e **reiniciar uma partida encerrada** pelo computador, usando a interface USB do Arduino Uno.
+
+- **Velocidade:** 9600 baud, configurada por `Serial.begin(9600)`; o parâmetro `monitor_speed` do `platformio.ini` define a velocidade do Serial Monitor e deve usar o mesmo valor.
+- **Configuração usual da UART:** 8 bits de dados, sem paridade e 1 bit de parada (8N1).
+- **Formato:** caracteres ASCII; as mensagens enviadas com `Serial.println()` terminam em `\r\n`.
+- **Configuração recomendada do Serial Monitor:** selecionar **Sem final de linha** para o envio do comando de reinício.
+
+### Comando de reinício
+
+| Comando enviado | Quando funciona | Comportamento do Arduino |
+| --- | --- | --- |
+| `R` ou `r` | Nos estados `VITORIA` ou `GAME_OVER` | Reinicia a partida e envia `PARTIDA REINICIADA` pela serial. |
+| `R` ou `r` | Durante as fases ou na tela inicial | Não é processado imediatamente. O caractere pode permanecer no buffer de recepção e causar reinício quando o jogo chegar à tela de vitória ou derrota. |
+| Outros caracteres | Nos estados de encerramento | São lidos e ignorados, sem resposta de erro específica. |
+
+O programa lê um caractere por vez com `Serial.read()`; **não exige** um `\n` após `R` ou `r`. A tecla `*` do teclado também reinicia a partida depois da vitória ou derrota. **Para evitar reinício inesperado ao final da partida, envie `R` ou `r` somente após aparecer a tela de vitória ou de Game Over.**
+
+### Mensagens informativas
+
+O Arduino envia mensagens durante a execução, como `JOGO INICIADO!`, `FASE 1 CONCLUIDA!`, `SWITCH INCORRETO!`, `VITORIA!` e `Game Over`. Essas mensagens são apenas informativas e podem aparecer sem que o computador envie um comando.
+
 ## Organização do repositório
 
 ```text
 Mic_project/
 ├── src/
 │   └── main.cpp              # Código principal
-├── tutorial/                  # Documentação e manual de desarmamento
+├── Tutorial/                  # Documentação do projeto
 │   ├── Manual_Bomb_Game.pdf     # Manual para consulta
 │   ├── Manual_Bomb_Game.docx    # Manual editável
-│   └── imagens/                # Fotos da montagem
+│   ├── Fluxograma_Bomb_Game.pdf # Fluxograma e diagrama de estados
+│   └── imagens/
+│       ├── montagem-geral.jpg
+│       └── detalhe-conexoes-arduino.jpg
 ├── platformio.ini             # Configuração do ambiente PlatformIO
 └── README.md                  # Documentação geral do projeto
 ```
 
-Os links acima utilizam caminhos relativos, permitindo acessar o manual diretamente pelo README do repositório no GitHub.
+Os links para o manual, o fluxograma e as fotografias usam caminhos relativos e funcionam no GitHub desde que os arquivos estejam nos locais indicados.
 
 ## Autores
 
