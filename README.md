@@ -10,11 +10,11 @@ O projeto foi programado em **C/C++**, utilizando **Visual Studio Code + Platfor
 
 **Visão geral do protótipo:** Arduino Uno conectado às duas protoboards, OLED, teclado, potenciômetros, chaves e demais componentes.
 
-![Visão geral da montagem física do Bomb Game](Tutorial/imagens/montagem-geral.jpg)
+![Visão geral da montagem física do Bomb Game](imagens/montagem-geral.jpg)
 
 **Detalhe do circuito:** conexões do Arduino Uno, buzzer, chaves e LEDs.
 
-![Detalhe das conexões do Arduino Uno no Bomb Game](Tutorial/imagens/detalhe-conexoes-arduino.jpg)
+![Detalhe das conexões do Arduino Uno no Bomb Game](imagens/detalhe-conexoes-arduino.jpg)
 
 As fotos registram a montagem do protótipo em protoboards. Para reproduzi-la, consulte também a tabela de conexões abaixo: as imagens não substituem um esquema elétrico completo.
 
@@ -42,17 +42,16 @@ A proposta é que um **operador**, responsável pelo circuito, siga as orientaç
 
 O **Manual de Desarmamento** contém as instruções que o especialista utiliza para orientar o operador durante as quatro fases. O README documenta a montagem, o funcionamento e a implementação técnica do projeto; o manual reúne as regras necessárias para resolver os desafios.
 
-- 📖 **[Consultar o Manual de Desarmamento (PDF)](Tutorial/Manual_Bomb_Game.pdf)** — versão para leitura e impressão.
-- 📝 **[Baixar o Manual de Desarmamento (Word)](Tutorial/Manual_Bomb_Game.docx)** — versão editável.
+- 📖 **[Consultar o Manual de Desarmamento (PDF)](Manual_Bomb_Game.pdf)** — versão para leitura e impressão.
 
-Ambos os arquivos estão disponíveis na pasta `Tutorial/`.
+O manual em PDF está disponível na raiz do repositório.
 
 
 ## Fluxograma e diagrama de estados
 
 O fluxograma detalha a máquina de estados e o funcionamento das quatro fases, incluindo decisões, tratamento de erros e condições de encerramento.
 
-- **[Consultar o fluxograma do Bomb Game (PDF)](Tutorial/Fluxograma_Bomb_Game.pdf)** — diagrama geral e fluxogramas individuais dos módulos.
+- **[Consultar o fluxograma do Bomb Game (PDF)](Fluxograma_Bomb_Game.pdf)** — diagrama geral e fluxogramas individuais dos módulos.
 
 ## Componentes utilizados
 
@@ -199,20 +198,18 @@ O Arduino envia mensagens durante a execução, como `JOGO INICIADO!`, `FASE 1 C
 
 ```text
 Mic_project/
+├── imagens/
+│   ├── montagem-geral.jpg
+│   └── detalhe-conexoes-arduino.jpg
 ├── src/
 │   └── main.cpp              # Código principal
-├── Tutorial/                  # Documentação do projeto
-│   ├── Manual_Bomb_Game.pdf     # Manual para consulta
-│   ├── Manual_Bomb_Game.docx    # Manual editável
-│   ├── Fluxograma_Bomb_Game.pdf # Fluxograma e diagrama de estados
-│   └── imagens/
-│       ├── montagem-geral.jpg
-│       └── detalhe-conexoes-arduino.jpg
+├── Fluxograma_Bomb_Game.pdf   # Fluxograma e diagrama de estados
+├── Manual_Bomb_Game.pdf       # Manual de desarmamento
 ├── platformio.ini             # Configuração do ambiente PlatformIO
 └── README.md                  # Documentação geral do projeto
 ```
 
-Os links para o manual, o fluxograma e as fotografias usam caminhos relativos e funcionam no GitHub desde que os arquivos estejam nos locais indicados.
+Os links para o manual, o fluxograma e as fotografias usam caminhos relativos à raiz do repositório. Os arquivos de imagem devem ter exatamente os nomes indicados acima.
 
 ## Autores
 
