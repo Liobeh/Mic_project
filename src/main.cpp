@@ -1,4 +1,19 @@
-// Libraries
+// Projeto: Bomb Game
+// Universidade Federal de Santa Catarina - UFSC
+// Disciplina: DAS5332 - Microcontroladores
+
+// Autores: Leonardo Humeres,
+// Matheus Fertig e Xavier Schmitz
+
+// Data: 25/11/2026
+
+// Descricao:
+
+// Firmware de um jogo de escape room desenvolvido
+// para o ATmega328P, composto por quatro modulos
+// de desafio controlados por uma maquina de estados.
+
+// Bibliotecas Gerais
 #include <Arduino.h>
 #include <stdlib.h>
 #include <avr/pgmspace.h> // p/ mandar coisa pra mem flash
@@ -20,7 +35,7 @@
 #define OLED_RESET -1 // -1 porque não tem pino reset, logo depende do reset do arduino.
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// Setup das variaveis
+// setup de variaveis
 
 // fase 3
 bool jogo3_iniciado = false;
@@ -78,6 +93,9 @@ bool telaVitoriaMostrada = false;
 bool telaGameOverMostrada = false;
 
 // substituindo funções prontas do arduino
+// Retorna o tempo em milissegundos acumulado pelo Timer1. A leitura de 32 bits é
+// atômica para evitar alterações durante a cópia.
+
 uint32_t meu_millis()
 {
   uint8_t estado = SREG;
@@ -90,6 +108,8 @@ uint32_t meu_millis()
 }
 
 // Leitura de um canal analogico, material da prof
+// Recebe o canal ADC (0 a 7), seleciona a referência AVcc e retorna a leitura de 10
+// bits após a conversão.
 uint16_t meu_analogRead(uint8_t canal)
 {
 
@@ -135,6 +155,8 @@ byte lerPCF()
   return 0xFF;
 }
 
+// Varre as quatro linhas e três colunas utilizadas do teclado. Retorna a tecla
+// detectada ou '\0' quando nenhuma está pressionada.
 char lerTeclado()
 {
   for (int i = 0; i < 4; i++)
@@ -162,6 +184,8 @@ char lerTeclado()
   return '\0';
 }
 
+// Retorna uma tecla apenas na transição de solta para pressionada, com intervalo de
+// debounce de 40 ms. Retorna '\0' sem novo evento.
 char lerTeclaNova()
 {
   static char anterior = '\0';
@@ -191,8 +215,7 @@ char lerTeclaNova()
   return resultado;
 }
 
-// fase1
-//  Setup dos pinos
+// Definição dos pinos digitais
 #define chave_4 4
 #define chave_5 5
 #define chave_6 6
@@ -204,10 +227,10 @@ char lerTeclaNova()
 #define led_3 PB2 // D10
 #define led_4 PB4 // D12
 
-// -------- config buzzer -------
+// Config do buzzer
 #define buzzer_pino PB3 // D11
 
-volatile uint8_t buzzer_divisor = 0; // 0 = desligado, 1 = 500Hz, 2 = 250Hz, 3 = 167Hz
+volatile uint8_t buzzer_divisor = 0;  // 0 = desligado, 1 = 500Hz, 2 = 250Hz, 3 = 167Hz
 volatile uint8_t buzzer_contador = 0; // contador (p/ div de freq)
 
 // Cada som corresponde ao número da linha nas matrizes abaixo (0 a 3)
@@ -222,18 +245,18 @@ enum sons_buzzer
 
 // Frequências em Hz de cada nota
 const uint16_t melodias_frequencias[4][5] PROGMEM = {
-  {250,   0, 167,   0,   0}, // linha 0: erro
-  {500,   0,   0,   0,   0}, // linha 1: Alerta
-  {250,   0, 500,   0, 500}, // linha 2: Vitoria
-  {500,   0, 250,   0, 167}  // linha 3: Game_Over
+    {250, 0, 167, 0, 0},   // linha 0: erro
+    {500, 0, 0, 0, 0},     // linha 1: Alerta
+    {250, 0, 500, 0, 500}, // linha 2: Vitoria
+    {500, 0, 250, 0, 167}  // linha 3: Game_Over
 };
 
 // Duração em ms de cada nota
 const uint16_t melodias_duracao[4][5] PROGMEM = {
-  {140,  50, 250,   0,   0}, // linha 0: erro
-  { 80,   0,   0,   0,   0}, // linha 1: Alerta
-  {100,  40, 100,  40, 260}, // linha 2: Vitoria
-  {180,  50, 180,  50, 450}  // linha 3: Game_Over
+    {140, 50, 250, 0, 0},    // linha 0: erro
+    {80, 0, 0, 0, 0},        // linha 1: Alerta
+    {100, 40, 100, 40, 260}, // linha 2: Vitoria
+    {180, 50, 180, 50, 450}  // linha 3: Game_Over
 };
 
 // Quantos passos válidos cada melodia tem
@@ -241,11 +264,13 @@ const uint8_t melodias_tamanhos[4] PROGMEM = {3, 1, 5, 5};
 
 // Variáveis de controle do buzzer
 sons_buzzer som_atual = Silencio; // começa em silencio
-uint8_t indice_nota = 0; //qual "passo" a nota esta
-uint32_t inicio_nota = 0; // tempo q a nota começou a tocar
-bool som_prioridade = false; // se o som tem prioridade (em relação a Alerta)
+uint8_t indice_nota = 0;          // qual "passo" a nota esta
+uint32_t inicio_nota = 0;         // tempo q a nota começou a tocar
+bool som_prioridade = false;      // se o som tem prioridade (em relação a Alerta)
 
-void buzzerTick() //'tick' do buzzer (para a gerar frequencia do som)
+// Executada a cada 1 ms pelo Timer1. Alterna a saída do buzzer conforme o divisor
+// para produzir a frequência desejada.
+void buzzerTick()
 {
   if (buzzer_divisor > 0)
   {
@@ -258,6 +283,7 @@ void buzzerTick() //'tick' do buzzer (para a gerar frequencia do som)
   }
 }
 
+// Interrompe a geração do sinal e mantém a saída do buzzer em nível baixo.
 void buzzerDesligar()
 {
   buzzer_divisor = 0;
@@ -265,12 +291,15 @@ void buzzerDesligar()
   clr_bit(PORTB, buzzer_pino);
 }
 
+// Configura o pino do buzzer como saída e inicia em silêncio.
 void buzzerInicializar()
 {
   set_bit(DDRB, buzzer_pino);
   buzzerDesligar();
 }
 
+// Recebe a frequência em Hz e seleciona um dos três divisores disponíveis. Frequência
+// zero desliga o buzzer.
 void buzzerLigar(uint16_t freq)
 {
   if (freq == 0)
@@ -298,6 +327,7 @@ void buzzerLigar(uint16_t freq)
   buzzer_divisor = div;
 }
 
+// Encerra a melodia atual e limpa os estados de controle do som.
 void pararSom()
 {
   buzzerDesligar();
@@ -306,6 +336,8 @@ void pararSom()
   som_prioridade = false;
 }
 
+// Recebe o tipo de som e inicia a primeira nota da melodia armazenada na flash.
+// Alertas não interrompem sons prioritários.
 void tocarSom(sons_buzzer som)
 {
   if (som >= Silencio)
@@ -327,6 +359,8 @@ void tocarSom(sons_buzzer som)
   buzzerLigar(pgm_read_word(&melodias_frequencias[som_atual][0]));
 }
 
+// Recebe a indicação de partida ativa e o tempo restante em segundos. Avança as notas
+// e gera alertas sem esperar pelo fim de cada nota.
 void atualizarBuzzer(bool jogo_ativo, uint16_t tempo_restante)
 {
   uint32_t agora = meu_millis();
@@ -370,11 +404,14 @@ void atualizarBuzzer(bool jogo_ativo, uint16_t tempo_restante)
     }
   }
 }
-// -------- fim config buzzer -------
+
 // erros
 uint8_t erros = 0;
 
-void registrarErros(){
+// Registra uma falha e inicia o som de erro. A penalidade de tempo é calculada em
+// atualizarTempo().
+void registrarErros()
+{
   erros++;
   tocarSom(erro);
 }
@@ -394,7 +431,6 @@ const char codigo_sequencias[4][6] = {
     {'7', '7', '8', '4', '6', '2'}}; // seq4
 
 // Definição de variaveis globais fase2 ADC
-//================================
 
 bool fase2Iniciada = false;
 
@@ -419,9 +455,9 @@ unsigned long ultima_troca = 0;
 // Parte dos potenciometros
 const int min_max_3x = -15;
 const int nada = -20;
-const int meio = -11;   // 341<= meio <=682
+const int meio = -11;   // 342<= meio <=682
 const int minimo = -9;  // 0<= minimo <=341
-const int maximo = -16; // 682<= maximo <=1023
+const int maximo = -16; // 683<= maximo <=1023
 const int nenhuma = -1;
 const int tabela_resposta_pot[4][2] = {
     // tabela de respostas com potenciometros para cada configuração de leds
@@ -439,16 +475,16 @@ int vetor_pot[2] = {2, 3};
 bool passou_pelo_minimo[2] = {0, 0};
 bool fase2_concluida = false;
 bool fase2_falhou = false;
-unsigned long tempo_segurar = 1500; // tempo que o jogador deve segurarar o potenciometro na posição para validar a resposta
+unsigned long tempo_segurar = 1500; // Tempo necessario para validar a posicao do potenciometro
 unsigned long momento_chegada[2] = {0, 0};
 unsigned long tempolimite_fase_2 = 60000; // ideal 1 minuto 60000 ms
 unsigned long momento_inicio = 0;
 
-//=================================
-
 // Funções da fase2 ADC
-//=================================================================================================================================================================================
-void acender_leds() // void acender_leds():
+
+// Sorteia um padrão de LEDs diferente do anterior, aplica seus estados iniciais e
+// registra o início da tentativa.
+void acender_leds()
 {
   int configuracao_led_escolhida = random(0, 4); // um gerador pseudoaletório o qual indica uma das configurações para acender
   while (configuracao_led_escolhida == configuracao_led_anterior)
@@ -472,6 +508,8 @@ void acender_leds() // void acender_leds():
   momento_inicio = meu_millis();
 }
 
+// Alterna periodicamente apenas os LEDs configurados para piscar, mantendo os demais
+// estados.
 void pisca_led()
 {
   if ((meu_millis() - ultima_troca) >= tempo_pisca)
@@ -496,35 +534,37 @@ void pisca_led()
   }
 }
 
-// Funções de resposta dos potenciometros
+// Recebe a leitura do ADC e retorna a faixa correspondente
 int converter_posicao(int leitura_pot)
 {
 
-  if (leitura_pot <= 341) // condiconal de leitura de cada potenciometro,
+  if (leitura_pot <= 341)
   {
     return minimo;
   }
-  else if (leitura_pot <= 682) // condicional de leitura de cada potenciometro,
+  else if (leitura_pot <= 682)
   {
     return meio;
   }
-  else // condicional de leitura de cada potenciometro,
+  else
   {
     return maximo;
   }
 }
 
+// Verifica se o potenciometro permaneceu na mesma
+// posicao pelo tempo necessario para validacao.
 int confirmar_posicao(int indice_pot)
 {
   // Verifica se o potenciometro mudou de posicao
   if (posicao_pot_lida[indice_pot] != posicao_anterior[indice_pot])
   {
-  if (posicao_anterior[indice_pot] != nenhuma) // verifica se não é a primeira leitura do potenciometro
-  {
-    momento_chegada[indice_pot] = meu_millis(); 
+    if (posicao_anterior[indice_pot] != nenhuma) // verifica se não é a primeira leitura do potenciometro
+    {
+      momento_chegada[indice_pot] = meu_millis();
+    }
+    posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
   }
-  posicao_anterior[indice_pot] = posicao_pot_lida[indice_pot];
-  } 
   // Verifica se permaneceu na posicao pelo tempo necessario
   if (meu_millis() - momento_chegada[indice_pot] >= tempo_segurar && momento_chegada[indice_pot] != 0)
   {
@@ -534,6 +574,8 @@ int confirmar_posicao(int indice_pot)
   return nenhuma;
 }
 
+// Lê os dois potenciômetros, contabiliza giros e compara as ações com o padrão
+// sorteado. Atualiza as flags de sucesso ou falha da tentativa.
 void resposta_potenciometros()
 {
 
@@ -541,13 +583,13 @@ void resposta_potenciometros()
 
   if (fase2_concluida || fase2_falhou) // já terminou?
   {
-    return; // sai da função
+    return;
   }
 
   if (meu_millis() - momento_inicio >= tempolimite_fase_2) // tempo esgotado?
   {
     fase2_falhou = true;
-    registrarErros(); // conta um erro para a
+    registrarErros(); // Registra um erro por tempo esgotado
     return;
   }
 
@@ -556,15 +598,15 @@ void resposta_potenciometros()
   {
     pot_valor_lido[indice] = meu_analogRead(vetor_pot[indice]);
 
-    if (pot_valor_lido[indice] <= 341) // condiconal de leitura de cada potenciometro,
+    if (pot_valor_lido[indice] <= 341)
     {
       posicao_pot_lida[indice] = minimo;
     }
-    else if (pot_valor_lido[indice] <= 682) // condicional de leitura de cada potenciometro,
+    else if (pot_valor_lido[indice] <= 682)
     {
       posicao_pot_lida[indice] = meio;
     }
-    else // condicional de leitura de cada potenciometro,
+    else
     {
       posicao_pot_lida[indice] = maximo;
     }
@@ -580,9 +622,11 @@ void resposta_potenciometros()
       passou_pelo_minimo[indice] = false;
     }
 
-    posicao_confirmada = confirmar_posicao(indice); // verificar se o jogador está esperando o tempo_segurar
+    // Valida a permanencia do potenciometro na posicao.
+    posicao_confirmada = confirmar_posicao(indice);
 
-    if (contador_de_giros[indice] >= 3) // condicional para quando o potenciometro atinge vai mínimo ao máximo 3 vezes
+    // Verifica se foram completados pelo menos tres giros do minimo ao maximo.
+    if (contador_de_giros[indice] >= 3)
     {
       posicao_confirmada = min_max_3x;
     }
@@ -596,9 +640,10 @@ void resposta_potenciometros()
   {
     fase2_concluida = true;
   }
-  // Serial.println(posicao_confirmada); // verificação do valor de posicao_confirmada para teste, deve retornar -1
 }
 
+// Limpa os estados de validação dos potenciômetros e inicia uma tentativa com outro
+// padrão de LEDs.
 void nova_tentativa_fase_2()
 {
   fase2_falhou = false;
@@ -615,20 +660,21 @@ void nova_tentativa_fase_2()
   ultima_troca = meu_millis();
   acender_leds(); // chama acender_leds para a nova tentativa ter outro padrão de leds
 }
-//============================================================================================================================================================================
 
-// rotina de interrupcao do botao
+// INT1: sinaliza a pressão do botão para tratamento no loop.
 ISR(INT1_vect)
 {
   flag_botao = true;
 }
 
+// Timer1: base de tempo de 1 ms e geração do sinal do buzzer.
 ISR(TIMER1_COMPA_vect)
 {
   ms++;
   buzzerTick();
 }
 
+// Timer2: acumula milissegundos em segundos e sinaliza o limite de 480 s.
 ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
 {
   contador_ms++;
@@ -645,7 +691,9 @@ ISR(TIMER2_COMPA_vect) // chama a cada 1 ms
   }
 }
 
-// setup do tempo atual
+// Cálculo do tempo restante
+// Calcula o tempo restante considerando os segundos decorridos e a penalidade de 15 s
+// por erro. Sinaliza o esgotamento sem permitir valor negativo.
 void atualizarTempo()
 {
   uint16_t tempo_decorrido;
@@ -670,7 +718,9 @@ void atualizarTempo()
   }
 }
 
-// Auto-explicativa
+// Reinicialização da partida
+// Para o cronômetro, limpa os estados da partida, sorteia novos desafios e retorna à
+// tela inicial.
 void reiniciarJogo()
 {
   // Para o cronometro
@@ -702,7 +752,7 @@ void reiniciarJogo()
   pisca = HIGH;
   ultima_troca = 0;
 
-  // Desliga o LED verde da fase 2
+  // Desliga o LED adicional da fase 4 (D12).
   clr_bit(PORTB, PB4);
 
   // Reinicia a fase 3
@@ -736,6 +786,8 @@ void reiniciarJogo()
   Serial.println(F("PARTIDA REINICIADA"));
 }
 
+// Consulta a serial e o teclado nos estados finais. Reinicia a partida ao receber R,
+// r ou *.
 void verificarReinicio()
 {
   char comando = '\0';
@@ -754,6 +806,8 @@ void verificarReinicio()
 }
 
 // Display
+// Desenha o cabeçalho comum com tempo em minutos e segundos e número de erros no
+// buffer do display.
 void atualizarOLED()
 {
   display.setTextSize(1);
@@ -780,6 +834,8 @@ void atualizarOLED()
   display.drawLine(0, 12, 127, 12, SSD1306_WHITE);
 }
 
+// Exibe o identificador da chave sorteada e o cabeçalho, limitando a atualização a
+// cada 200 ms.
 void mostrarFase1()
 {
   static uint32_t ultimaAtualizacao = 0;
@@ -820,6 +876,8 @@ void mostrarFase1()
   display.display();
 }
 
+// Exibe as instruções dos potenciômetros e o cabeçalho, com atualização a cada 250
+// ms.
 void mostrarFase2()
 {
   static uint32_t ultimaAtualizacao = 0;
@@ -848,6 +906,8 @@ void mostrarFase2()
   display.display();
 }
 
+// Exibe protocolo, código, condição inicial e ação atual, com atualização a cada 250
+// ms.
 void mostrarFase3()
 {
   static uint32_t ultimaAtualizacao = 0;
@@ -918,6 +978,7 @@ void mostrarFase3()
   display.display();
 }
 
+// Exibe o cabeçalho e a disponibilidade do replay, com atualização a cada 250 ms.
 void mostrarFase4()
 {
   static uint32_t ultimaAtualizacao = 0;
@@ -945,6 +1006,8 @@ void mostrarFase4()
   display.display();
 }
 
+// Inicializa comunicação, display, ADC, GPIO, interrupções e temporizadores. Sorteia
+// os desafios da primeira partida.
 void setup()
 {
 
@@ -952,7 +1015,7 @@ void setup()
   Wire.begin();
   escreverPCF(0xFF);
 
-  // ---------- inicialização da tela ------------
+  // Inicialização da tela
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
   {
     Serial.println(F("SSD1306 allocation failed"));
@@ -972,14 +1035,13 @@ void setup()
 
   display.display(); // faz display mostrar mensagem
 
-  // ------- fim da inicialização da tela ---------
   // Habilita o ADC e configura prescaler 128, material da prof
   ADCSRA = (1 << ADEN) |
            (1 << ADPS2) |
            (1 << ADPS1) |
            (1 << ADPS0);
 
-  // Usa ADC0 como semente para o sorteio
+  // Usa ADC0 como semente para o sorteio.
   randomSeed(meu_analogRead(0));
   escolhido = random(4, 8);
   Serial.print(F("Switch sorteado: "));
@@ -1001,10 +1063,12 @@ void setup()
   Serial.print(F("Sequencia sorteada: "));
   Serial.println(escolhido2);
 
-  // config pinos para a fase1
+  // Configuração dos LEDs, buzzer, botão e chaves
+
+  // Configuracao dos LEDs (PB0, PB1, PB2 e PB4)
 
   set_bit(DDRB, led_1);
-  clr_bit(PORTB, led_1); // Config leds (PB0 até PB3)
+  clr_bit(PORTB, led_1);
   set_bit(DDRB, led_2);
   clr_bit(PORTB, led_2);
   set_bit(DDRB, led_3);
@@ -1012,7 +1076,7 @@ void setup()
   set_bit(DDRB, led_4);
   clr_bit(PORTB, led_4);
 
-  // LED verde da fase 2 - D12 (PB4)
+  // LED adicional da fase 4 - D12 (PB4)
   set_bit(DDRB, PB4);
   clr_bit(PORTB, PB4);
 
@@ -1031,11 +1095,11 @@ void setup()
   clr_bit(DDRD, chave_7);
   set_bit(PORTD, chave_7);
 
-  //config do buzzer
+  // config do buzzer
   buzzerInicializar();
   cli();
 
-  // setup interrupcao
+  // INT1 na borda de descida; limpa a flag pendente e habilita a interrupção.
   EICRA = 0b1000;
   EIFR = 0b10;
   EIMSK = 0b10;
@@ -1045,6 +1109,7 @@ void setup()
   TCCR1B = 0;
   TCNT1 = 0;
 
+  // Com F_CPU = 16 MHz e prescaler 64, 250 contagens correspondem a 1 ms.
   OCR1A = 249;
   TIMSK1 = (1 << OCIE1A);
   TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10);
@@ -1055,6 +1120,7 @@ void setup()
   TCNT2 = 0;
 
   TCCR2A = (1 << WGM21);
+  // O prescaler 64 será habilitado apenas ao iniciar a partida.
   OCR2A = 249;
   TIMSK2 = (1 << OCIE2A);
   TCCR2B = 0;
@@ -1062,6 +1128,8 @@ void setup()
   sei();
 }
 
+// Trata o evento do botão com debounce e compara as quatro chaves com a máscara
+// esperada. Registra erro ou avança à fase 2.
 void executarFase1()
 {
   mostrarFase1();
@@ -1076,7 +1144,7 @@ void executarFase1()
     {
       return;
     }
-    ultimoTempo = agora; // Start cooldown from this valid press
+    ultimoTempo = agora; // Registra o instante do ultimo acionamento valido
 
     // Define qual combinacao de switches esperamos
     uint8_t esperado = 0b11110000;
@@ -1100,6 +1168,8 @@ void executarFase1()
   }
 }
 
+// Inicializa a tentativa, atualiza LEDs e potenciômetros e decide entre avançar,
+// repetir ou encerrar a partida.
 void executarFase2()
 {
   // Inicializa a fase apenas na primeira entrada
@@ -1156,6 +1226,8 @@ void executarFase2()
   mostrarFase2();
 }
 
+// Define as condições de luz, os tempos em milissegundos e o número de autorização a
+// partir do protocolo e código sorteados.
 void configurarProtocolo3()
 
 {
@@ -1214,6 +1286,9 @@ void configurarProtocolo3()
     break;
   }
 }
+
+// Controla as três ações do protocolo: luminosidade estável, autorização pelo teclado
+// e luminosidade final.
 void executarFase3()
 
 {
@@ -1334,6 +1409,8 @@ void executarFase3()
   }
 }
 
+// Apresenta a sequência de LEDs sem longas esperas, permite um replay e valida os
+// seis dígitos antes de declarar vitória.
 void executarFase4()
 {
   uint32_t agora = meu_millis();
@@ -1341,7 +1418,7 @@ void executarFase4()
   // Primeira entrada na fase 4
   if (!fase4Iniciada)
   {
-    agora = meu_millis(); // Atualiza o tempo apos o delay
+    agora = meu_millis(); // Atualiza o instante de inicio da sequencia
     fase4Iniciada = true;
 
     passoLed4 = 0;
@@ -1377,8 +1454,8 @@ void executarFase4()
       }
     }
   }
-  // Sequencia terminou: permite repetir uma vez
-  // A sequência terminou: libera o keypad
+
+  // Ao terminar a sequencia, libera o teclado e permite um replay.
   if (passoLed4 >= 4)
   {
     char tecla = lerTeclaNova();
@@ -1447,6 +1524,8 @@ void executarFase4()
   mostrarFase4();
 }
 
+// Executa a máquina de estados, atualiza o cronômetro e o buzzer e verifica as
+// condições globais de derrota.
 void loop()
 {
   bool jogo_ativo = (estadoAtual != INICIO &&
@@ -1583,8 +1662,8 @@ void loop()
     if (!telaGameOverMostrada)
     {
       TCCR2B = 0;          // Para o cronometro
-      PORTB &= 0b11110000; // Desliga os 4 LEDs
-      clr_bit(PORTB, PB4);
+      PORTB &= 0b11110000; // Desliga os tres primeiros LEDs e coloca o pino do buzzer em nivel baixo
+      clr_bit(PORTB, PB4); // Desliga o quarto LED
       atualizarTempo();
 
       display.clearDisplay();
